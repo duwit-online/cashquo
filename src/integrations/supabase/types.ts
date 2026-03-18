@@ -58,9 +58,15 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string
+          first_name: string
           full_name: string
           id: string
+          last_name: string
           phone: string | null
+          plain_password: string
+          postal_code: string
+          state: string
+          town: string
           updated_at: string
           user_id: string
         }
@@ -68,9 +74,15 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string
+          first_name?: string
           full_name?: string
           id?: string
+          last_name?: string
           phone?: string | null
+          plain_password?: string
+          postal_code?: string
+          state?: string
+          town?: string
           updated_at?: string
           user_id: string
         }
@@ -78,9 +90,15 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string
+          first_name?: string
           full_name?: string
           id?: string
+          last_name?: string
           phone?: string | null
+          plain_password?: string
+          postal_code?: string
+          state?: string
+          town?: string
           updated_at?: string
           user_id?: string
         }
