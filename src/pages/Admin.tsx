@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye } from "lucide-react";
+import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -96,6 +96,22 @@ const Admin = () => {
     postal_code: "",
   });
   const [creating, setCreating] = useState(false);
+
+  // Balance edit state
+  const [balanceUser, setBalanceUser] = useState<ProfileRow | null>(null);
+  const [balanceForm, setBalanceForm] = useState({ balance: "0" });
+  const [savingBalance, setSavingBalance] = useState(false);
+
+  // Manual transaction state
+  const [transactionUser, setTransactionUser] = useState<ProfileRow | null>(null);
+  const [transactionForm, setTransactionForm] = useState({
+    type: "credit",
+    amount: "",
+    description: "",
+    status: "completed",
+    recipient: "",
+  });
+  const [creatingTransaction, setCreatingTransaction] = useState(false);
 
   const fetchAll = async () => {
     setDataLoading(true);
@@ -186,6 +202,111 @@ const Admin = () => {
       setEditingUser(null);
       await fetchAll();
     }
+  };
+
+  const openBalanceEditor = (profile: ProfileRow) => {
+    const userAccount = accounts.find((account) => account.user_id === profile.user_id);
+    setBalanceUser(profile);
+    setBalanceForm({ balance: String(userAccount?.balance ?? 0) });
+  };
+
+  const handleUpdateBalance = async () => {
+    if (!balanceUser) return;
+
+    const userAccount = accounts.find((account) => account.user_id === balanceUser.user_id);
+    if (!userAccount) {
+      toast.error("No account found for this user");
+      return;
+    }
+
+    setSavingBalance(true);
+    const nextBalance = Number(balanceForm.balance);
+
+    if (Number.isNaN(nextBalance)) {
+      toast.error("Enter a valid balance");
+      setSavingBalance(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("accounts")
+      .update({ balance: nextBalance })
+      .eq("id", userAccount.id);
+
+    if (error) {
+      toast.error(error.message || "Failed to update balance");
+    } else {
+      toast.success("Balance updated");
+      setBalanceUser(null);
+      await fetchAll();
+    }
+
+    setSavingBalance(false);
+  };
+
+  const openTransactionCreator = (profile: ProfileRow) => {
+    setTransactionUser(profile);
+    setTransactionForm({
+      type: "credit",
+      amount: "",
+      description: "",
+      status: "completed",
+      recipient: "",
+    });
+  };
+
+  const handleCreateTransaction = async () => {
+    if (!transactionUser) return;
+
+    const userAccount = accounts.find((account) => account.user_id === transactionUser.user_id);
+    if (!userAccount) {
+      toast.error("No account found for this user");
+      return;
+    }
+
+    const amount = Number(transactionForm.amount);
+    if (!amount || Number.isNaN(amount) || amount <= 0) {
+      toast.error("Enter a valid transaction amount");
+      return;
+    }
+
+    setCreatingTransaction(true);
+
+    const { error: transactionError } = await supabase.from("transactions").insert({
+      account_id: userAccount.id,
+      user_id: transactionUser.user_id,
+      type: transactionForm.type,
+      amount,
+      description: transactionForm.description || `${transactionForm.type} created by admin`,
+      status: transactionForm.status,
+      recipient: transactionForm.recipient || null,
+    });
+
+    if (transactionError) {
+      toast.error(transactionError.message || "Failed to create transaction");
+      setCreatingTransaction(false);
+      return;
+    }
+
+    if (transactionForm.status === "completed") {
+      const delta = transactionForm.type === "credit" ? amount : -amount;
+      const { error: balanceError } = await supabase
+        .from("accounts")
+        .update({ balance: Number(userAccount.balance) + delta })
+        .eq("id", userAccount.id);
+
+      if (balanceError) {
+        toast.error(balanceError.message || "Transaction created, but balance update failed");
+        setCreatingTransaction(false);
+        await fetchAll();
+        return;
+      }
+    }
+
+    toast.success("Transaction created");
+    setTransactionUser(null);
+    setCreatingTransaction(false);
+    await fetchAll();
   };
 
   // Delete user profile (and cascade)
@@ -320,6 +441,12 @@ const Admin = () => {
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingUser(p)}>
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)}>
+                                <Wallet className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)}>
+                                <ReceiptText className="h-3.5 w-3.5" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
@@ -450,6 +577,105 @@ const Admin = () => {
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
             <Button onClick={handleUpdateUser}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Balance Dialog */}
+      <Dialog open={!!balanceUser} onOpenChange={(open) => !open && setBalanceUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Account Balance</DialogTitle>
+          </DialogHeader>
+          {balanceUser && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                {balanceUser.first_name} {balanceUser.last_name}
+              </div>
+              <div>
+                <Label>Balance</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={balanceForm.balance}
+                  onChange={(e) => setBalanceForm({ balance: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={handleUpdateBalance} disabled={savingBalance}>
+              {savingBalance ? "Saving..." : "Save Balance"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Transaction Dialog */}
+      <Dialog open={!!transactionUser} onOpenChange={(open) => !open && setTransactionUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Transaction</DialogTitle>
+          </DialogHeader>
+          {transactionUser && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                For {transactionUser.first_name} {transactionUser.last_name}
+              </div>
+              <div>
+                <Label>Type</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={transactionForm.type}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
+                >
+                  <option value="credit">Credit</option>
+                  <option value="debit">Debit</option>
+                </select>
+              </div>
+              <div>
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={transactionForm.amount}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Input
+                  value={transactionForm.description}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, description: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Recipient</Label>
+                <Input
+                  value={transactionForm.recipient}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, recipient: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={transactionForm.status}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, status: e.target.value })}
+                >
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={handleCreateTransaction} disabled={creatingTransaction}>
+              {creatingTransaction ? "Creating..." : "Create Transaction"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
