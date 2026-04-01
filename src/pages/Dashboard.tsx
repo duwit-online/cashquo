@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpRight, ArrowDownLeft, Send, Plus, TrendingUp, Wallet, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowUpRight, ArrowDownLeft, Send, Plus, TrendingUp, Wallet, Eye, EyeOff, Copy, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface Account {
   id: string;
@@ -24,59 +27,91 @@ interface Transaction {
   recipient: string | null;
   status: string;
   created_at: string;
+  account_id: string;
 }
+
+const statusBadge = (status: string) => {
+  const map: Record<string, string> = {
+    completed: "bg-success/10 text-success",
+    pending: "bg-warning/10 text-warning",
+    failed: "bg-destructive/10 text-destructive",
+  };
+  return map[status] || "bg-muted text-muted-foreground";
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showBalance, setShowBalance] = useState(true);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-
     const fetchData = async () => {
       const [accRes, txRes] = await Promise.all([
         supabase.from("accounts").select("*").eq("user_id", user.id),
         supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
       ]);
       if (accRes.data) setAccounts(accRes.data);
-      if (txRes.data) setTransactions(txRes.data);
+      if (txRes.data) setTransactions(txRes.data as Transaction[]);
     };
-
     fetchData();
   }, [user]);
 
   const totalBalance = accounts.reduce((sum, acc) => sum + Number(acc.balance), 0);
+  const mainAccount = accounts[0];
+
+  const copyAccountNumber = () => {
+    if (mainAccount) {
+      navigator.clipboard.writeText(mainAccount.account_number);
+      setCopied(true);
+      toast.success("Account number copied!");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
+        {/* Greeting */}
         <div>
           <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
-            Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}
+            Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}{user?.user_metadata?.first_name ? `, ${user.user_metadata.first_name}` : ""}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Here's your financial overview</p>
         </div>
 
-        {/* Balance Hero Card */}
-        <Card className="bg-primary text-primary-foreground overflow-hidden relative">
-          <CardContent className="p-6 lg:p-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-primary-foreground/70 text-sm">
-                <Wallet className="h-4 w-4" />
+        {/* Balance Hero */}
+        <Card className="bg-primary text-primary-foreground overflow-hidden relative border-0 shadow-lg">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/5 rounded-full translate-y-1/2 -translate-x-1/4" />
+          <CardContent className="p-6 lg:p-8 relative z-10">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2 text-primary-foreground/60 text-xs uppercase tracking-wider font-medium">
+                <Wallet className="h-3.5 w-3.5" />
                 Total Balance
               </div>
-              <button onClick={() => setShowBalance(!showBalance)} className="text-primary-foreground/70 hover:text-primary-foreground">
+              <button onClick={() => setShowBalance(!showBalance)} className="text-primary-foreground/60 hover:text-primary-foreground transition-colors">
                 {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <p className="text-3xl lg:text-4xl font-display font-bold">
-              {showBalance ? `$${totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "••••••"}
+            <p className="text-3xl lg:text-5xl font-display font-bold mt-2">
+              {showBalance ? `$${totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "••••••••"}
             </p>
-            <div className="flex items-center gap-1 mt-2 text-sm text-primary-foreground/70">
+            {mainAccount && (
+              <div className="flex items-center gap-2 mt-4">
+                <span className="text-xs text-primary-foreground/50 font-mono">{mainAccount.account_number}</span>
+                <button onClick={copyAccountNumber} className="text-primary-foreground/50 hover:text-primary-foreground/80 transition-colors">
+                  {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-1 mt-2 text-xs text-primary-foreground/50">
               <TrendingUp className="h-3 w-3" />
-              <span>+2.4% from last month</span>
+              <span>Available balance · USD</span>
             </div>
           </CardContent>
         </Card>
@@ -84,14 +119,14 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-4 gap-3">
           {[
-            { icon: Send, label: "Send", color: "text-accent" },
-            { icon: ArrowDownLeft, label: "Receive", color: "text-accent" },
-            { icon: Plus, label: "Top Up", color: "text-accent" },
-            { icon: ArrowUpRight, label: "Pay", color: "text-accent" },
+            { icon: Send, label: "Send", onClick: () => navigate("/send") },
+            { icon: ArrowDownLeft, label: "Receive", onClick: copyAccountNumber },
+            { icon: Plus, label: "Top Up", onClick: () => {} },
+            { icon: ArrowUpRight, label: "Pay", onClick: () => {} },
           ].map((action) => (
-            <Card key={action.label} className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card key={action.label} className="cursor-pointer hover:shadow-md transition-all hover:border-accent/30 group" onClick={action.onClick}>
               <CardContent className="flex flex-col items-center gap-2 p-4">
-                <div className={`p-2 rounded-lg bg-accent/10 ${action.color}`}>
+                <div className="p-2.5 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
                   <action.icon className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-medium text-foreground">{action.label}</span>
@@ -104,17 +139,21 @@ const Dashboard = () => {
           {/* Recent Transactions */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-display">Recent Transactions</CardTitle>
-              <Button variant="ghost" size="sm" className="text-accent text-xs">View All</Button>
+              <CardTitle className="text-base font-display">Recent Transactions</CardTitle>
+              <Button variant="ghost" size="sm" className="text-accent text-xs h-8" onClick={() => navigate("/transactions")}>View All</Button>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-1">
               {transactions.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No transactions yet</p>
+                <p className="text-sm text-muted-foreground py-8 text-center">No transactions yet</p>
               ) : (
                 transactions.slice(0, 5).map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <button
+                    key={tx.id}
+                    onClick={() => setSelectedTx(tx)}
+                    className="w-full flex items-center justify-between py-3 px-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${tx.type === "credit" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                      <div className={`p-2 rounded-xl ${tx.type === "credit" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
                         {tx.type === "credit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                       </div>
                       <div>
@@ -123,18 +162,11 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-sm font-semibold ${tx.type === "credit" ? "text-success" : "text-foreground"}`}>
+                      <p className={`text-sm font-semibold tabular-nums ${tx.type === "credit" ? "text-success" : "text-foreground"}`}>
                         {tx.type === "credit" ? "+" : "-"}${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </p>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        tx.status === "completed" ? "bg-success/10 text-success" :
-                        tx.status === "pending" ? "bg-warning/10 text-warning" :
-                        "bg-destructive/10 text-destructive"
-                      }`}>
-                        {tx.status}
-                      </span>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </CardContent>
@@ -143,17 +175,19 @@ const Dashboard = () => {
           {/* Accounts */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-display">Your Accounts</CardTitle>
+              <CardTitle className="text-base font-display">Your Accounts</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {accounts.map((acc) => (
-                <div key={acc.id} className="p-4 rounded-lg bg-muted/50 border border-border">
-                  <div className="flex justify-between items-start mb-2">
+                <div key={acc.id} className="p-4 rounded-xl bg-muted/40 border border-border hover:border-accent/20 transition-colors">
+                  <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="text-sm font-medium">{acc.account_name}</p>
-                      <p className="text-xs text-muted-foreground">{acc.account_number}</p>
+                      <p className="text-sm font-semibold">{acc.account_name}</p>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">{acc.account_number}</p>
                     </div>
-                    <span className="text-xs px-2 py-0.5 rounded bg-success/10 text-success font-medium">{acc.status}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider ${acc.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+                      {acc.status}
+                    </span>
                   </div>
                   <p className="text-xl font-display font-bold">
                     {showBalance ? `$${Number(acc.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "••••••"}
@@ -164,6 +198,45 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
+
+      {/* Transaction Detail Modal */}
+      <Dialog open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-display">Transaction Details</DialogTitle>
+          </DialogHeader>
+          {selectedTx && (
+            <div className="space-y-6">
+              <div className="text-center py-4">
+                <div className={`inline-flex p-4 rounded-2xl mb-3 ${selectedTx.type === "credit" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                  {selectedTx.type === "credit" ? <ArrowDownLeft className="h-8 w-8" /> : <ArrowUpRight className="h-8 w-8" />}
+                </div>
+                <p className={`text-3xl font-display font-bold ${selectedTx.type === "credit" ? "text-success" : "text-foreground"}`}>
+                  {selectedTx.type === "credit" ? "+" : "-"}${Number(selectedTx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </p>
+                <span className={`inline-block mt-2 text-xs px-3 py-1 rounded-full font-medium ${statusBadge(selectedTx.status)}`}>
+                  {selectedTx.status.charAt(0).toUpperCase() + selectedTx.status.slice(1)}
+                </span>
+              </div>
+              <div className="space-y-3 text-sm">
+                {[
+                  ["Description", selectedTx.description || "—"],
+                  ["Type", selectedTx.type === "credit" ? "Credit (Incoming)" : "Debit (Outgoing)"],
+                  ["Recipient", selectedTx.recipient || "—"],
+                  ["Date", format(new Date(selectedTx.created_at), "MMMM d, yyyy")],
+                  ["Time", format(new Date(selectedTx.created_at), "h:mm:ss a")],
+                  ["Transaction ID", selectedTx.id.slice(0, 8).toUpperCase()],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium text-right max-w-[200px] truncate">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
