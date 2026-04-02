@@ -151,6 +151,24 @@ const SendMoney = () => {
       supabase.from("accounts").update({ balance: Number(recipientAcc.balance) + amt }).eq("id", recipientAcc.id),
     ]);
 
+    // Try to send email notification to recipient (fire and forget)
+    const { data: recipientProfileEmail } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("user_id", recipientAcc.user_id)
+      .single();
+
+    if (recipientProfileEmail?.email) {
+      supabase.functions.invoke("send-email-notification", {
+        body: {
+          user_id: recipientAcc.user_id,
+          amount: amt,
+          sender_name: senderName,
+          recipient_email: recipientProfileEmail.email,
+        },
+      }).catch(() => {});
+    }
+
     toast.success(`$${amt.toLocaleString("en-US", { minimumFractionDigits: 2 })} sent successfully!`);
     setSenderAccount({ ...senderAccount, balance: Number(senderAccount.balance) - amt });
     setSuccess(true);
