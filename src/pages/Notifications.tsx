@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Bell, BellRing, ArrowDownLeft, ArrowUpRight, Check, CheckCheck } from "lucide-react";
+import { Bell, BellRing, ArrowDownLeft, ArrowUpRight, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -19,19 +19,28 @@ interface Notification {
   created_at: string;
 }
 
-// Notification sound URL (public domain ding sound)
-const NOTIFICATION_SOUND_URL = "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg";
-
 const Notifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selected, setSelected] = useState<Notification | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const initialLoadDone = useRef(false);
+  const soundUrlRef = useRef<string>("https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg");
 
+  // Load notification sound URL from app_settings
   useEffect(() => {
-    audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
-    audioRef.current.volume = 0.5;
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "notification_sound_url")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) {
+          soundUrlRef.current = data.value;
+        }
+        audioRef.current = new Audio(soundUrlRef.current);
+        audioRef.current.volume = 0.5;
+      });
   }, []);
 
   const playSound = () => {
@@ -46,7 +55,6 @@ const Notifications = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Initial load
     supabase
       .from("notifications")
       .select("*")
@@ -57,7 +65,6 @@ const Notifications = () => {
         initialLoadDone.current = true;
       });
 
-    // Realtime subscription
     const channel = supabase
       .channel("user-notifications")
       .on(
@@ -162,7 +169,6 @@ const Notifications = () => {
         )}
       </div>
 
-      {/* Notification Detail Modal */}
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>

@@ -7,13 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { User, MapPin, Phone, Mail, Shield } from "lucide-react";
+import { User, MapPin, Phone, Mail, Copy, CheckCircle2 } from "lucide-react";
+import { ROUTING_NUMBER } from "@/lib/constants";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const SettingsPage = () => {
   const { user } = useAuth();
-  const [profile, setProfile] = useState({ full_name: "", phone: "", first_name: "", last_name: "", state: "", town: "", postal_code: "" });
+  const [profile, setProfile] = useState({ full_name: "", phone: "", first_name: "", last_name: "", state: "", town: "", postal_code: "", avatar_url: "" });
   const [loading, setLoading] = useState(false);
   const [accountNumber, setAccountNumber] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -26,6 +29,7 @@ const SettingsPage = () => {
         state: data.state || "",
         town: data.town || "",
         postal_code: data.postal_code || "",
+        avatar_url: data.avatar_url || "",
       });
     });
     supabase.from("accounts").select("account_number").eq("user_id", user.id).limit(1).single()
@@ -52,6 +56,15 @@ const SettingsPage = () => {
     setLoading(false);
   };
 
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    toast.success(`${label} copied!`);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const initials = `${profile.first_name?.charAt(0) || ""}${profile.last_name?.charAt(0) || ""}`;
+
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
@@ -60,19 +73,42 @@ const SettingsPage = () => {
           <p className="text-sm text-muted-foreground mt-1">Manage your personal information</p>
         </div>
 
-        {/* Account info */}
+        {/* Account info with avatar */}
         <Card className="bg-muted/40">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-display font-bold text-lg">
-              {profile.first_name?.charAt(0)}{profile.last_name?.charAt(0)}
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4 mb-4">
+              <Avatar className="h-16 w-16 border-2 border-accent/20">
+                {profile.avatar_url ? (
+                  <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                ) : null}
+                <AvatarFallback className="bg-primary text-primary-foreground font-display font-bold text-xl">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-display font-bold text-lg truncate">{profile.first_name} {profile.last_name}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="font-semibold">{profile.first_name} {profile.last_name}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Account</p>
-              <p className="text-xs font-mono text-muted-foreground">{accountNumber}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-background border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Routing Number</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-mono font-medium">{ROUTING_NUMBER}</p>
+                  <button onClick={() => copyToClipboard(ROUTING_NUMBER, "Routing")} className="text-muted-foreground hover:text-foreground transition-colors">
+                    {copied === "Routing" ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-background border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Account Number</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-mono font-medium">{accountNumber}</p>
+                  <button onClick={() => copyToClipboard(accountNumber, "Account")} className="text-muted-foreground hover:text-foreground transition-colors">
+                    {copied === "Account" ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

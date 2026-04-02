@@ -9,6 +9,8 @@ import { ArrowUpRight, ArrowDownLeft, Send, Plus, TrendingUp, Wallet, Eye, EyeOf
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ROUTING_NUMBER } from "@/lib/constants";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface Account {
   id: string;
@@ -46,17 +48,20 @@ const Dashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showBalance, setShowBalance] = useState(true);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null; first_name: string; last_name: string } | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [accRes, txRes] = await Promise.all([
+      const [accRes, txRes, profileRes] = await Promise.all([
         supabase.from("accounts").select("*").eq("user_id", user.id),
         supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
+        supabase.from("profiles").select("full_name, avatar_url, first_name, last_name").eq("user_id", user.id).single(),
       ]);
       if (accRes.data) setAccounts(accRes.data);
       if (txRes.data) setTransactions(txRes.data as Transaction[]);
+      if (profileRes.data) setProfile(profileRes.data);
     };
     fetchData();
   }, [user]);
@@ -64,31 +69,41 @@ const Dashboard = () => {
   const totalBalance = accounts.reduce((sum, acc) => sum + Number(acc.balance), 0);
   const mainAccount = accounts[0];
 
-  const copyAccountNumber = () => {
-    if (mainAccount) {
-      navigator.clipboard.writeText(mainAccount.account_number);
-      setCopied(true);
-      toast.success("Account number copied!");
-      setTimeout(() => setCopied(false), 2000);
-    }
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    toast.success(`${label} copied!`);
+    setTimeout(() => setCopied(null), 2000);
   };
+
+  const initials = profile ? `${profile.first_name?.charAt(0) || ""}${profile.last_name?.charAt(0) || ""}` : "";
 
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
-        {/* Greeting */}
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
-            Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}{user?.user_metadata?.first_name ? `, ${user.user_metadata.first_name}` : ""}
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">Here's your financial overview</p>
+        {/* Greeting with Avatar */}
+        <div className="flex items-center gap-4">
+          <Avatar className="h-12 w-12 border-2 border-accent/20">
+            {profile?.avatar_url ? (
+              <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+            ) : null}
+            <AvatarFallback className="bg-primary text-primary-foreground font-display font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h1 className="text-xl lg:text-2xl font-display font-bold text-foreground">
+              Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}{profile?.first_name ? `, ${profile.first_name}` : ""}
+            </h1>
+            <p className="text-muted-foreground text-xs mt-0.5">Here's your financial overview</p>
+          </div>
         </div>
 
         {/* Balance Hero */}
         <Card className="bg-primary text-primary-foreground overflow-hidden relative border-0 shadow-lg">
           <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full -translate-y-1/2 translate-x-1/3" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/5 rounded-full translate-y-1/2 -translate-x-1/4" />
-          <CardContent className="p-6 lg:p-8 relative z-10">
+          <CardContent className="p-5 lg:p-8 relative z-10">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 text-primary-foreground/60 text-xs uppercase tracking-wider font-medium">
                 <Wallet className="h-3.5 w-3.5" />
@@ -102,14 +117,24 @@ const Dashboard = () => {
               {showBalance ? `$${totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "••••••••"}
             </p>
             {mainAccount && (
-              <div className="flex items-center gap-2 mt-4">
-                <span className="text-xs text-primary-foreground/50 font-mono">{mainAccount.account_number}</span>
-                <button onClick={copyAccountNumber} className="text-primary-foreground/50 hover:text-primary-foreground/80 transition-colors">
-                  {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
+              <div className="mt-4 space-y-1.5">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-primary-foreground/40 uppercase tracking-wider w-16">Routing</span>
+                  <span className="text-xs text-primary-foreground/70 font-mono">{ROUTING_NUMBER}</span>
+                  <button onClick={() => copyToClipboard(ROUTING_NUMBER, "Routing number")} className="text-primary-foreground/40 hover:text-primary-foreground/80 transition-colors">
+                    {copied === "Routing number" ? <CheckCircle2 className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-primary-foreground/40 uppercase tracking-wider w-16">Account</span>
+                  <span className="text-xs text-primary-foreground/70 font-mono">{mainAccount.account_number}</span>
+                  <button onClick={() => copyToClipboard(mainAccount.account_number, "Account number")} className="text-primary-foreground/40 hover:text-primary-foreground/80 transition-colors">
+                    {copied === "Account number" ? <CheckCircle2 className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                </div>
               </div>
             )}
-            <div className="flex items-center gap-1 mt-2 text-xs text-primary-foreground/50">
+            <div className="flex items-center gap-1 mt-3 text-xs text-primary-foreground/50">
               <TrendingUp className="h-3 w-3" />
               <span>Available balance · USD</span>
             </div>
@@ -120,7 +145,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-4 gap-3">
           {[
             { icon: Send, label: "Send", onClick: () => navigate("/send") },
-            { icon: ArrowDownLeft, label: "Receive", onClick: copyAccountNumber },
+            { icon: ArrowDownLeft, label: "Receive", onClick: () => copyToClipboard(mainAccount?.account_number || "", "Account number") },
             { icon: Plus, label: "Top Up", onClick: () => {} },
             { icon: ArrowUpRight, label: "Pay", onClick: () => {} },
           ].map((action) => (
