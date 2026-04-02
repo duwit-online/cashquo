@@ -7,59 +7,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText } from "lucide-react";
+import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ROUTING_NUMBER } from "@/lib/constants";
 
 interface ProfileRow {
-  id: string;
-  user_id: string;
-  full_name: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  state: string;
-  town: string;
-  postal_code: string;
-  plain_password: string;
-  created_at: string;
+  id: string; user_id: string; full_name: string; first_name: string; last_name: string;
+  email: string; state: string; town: string; postal_code: string; plain_password: string;
+  created_at: string; avatar_url: string | null;
 }
 
 interface AccountRow {
-  id: string;
-  user_id: string;
-  balance: number;
-  account_number: string;
-  status: string;
+  id: string; user_id: string; balance: number; account_number: string; status: string;
 }
 
 interface TransactionRow {
-  id: string;
-  type: string;
-  amount: number;
-  description: string;
-  status: string;
-  created_at: string;
-  user_id: string;
+  id: string; type: string; amount: number; description: string; status: string;
+  created_at: string; user_id: string;
 }
 
 const Admin = () => {
@@ -69,49 +40,37 @@ const Admin = () => {
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // Edit user state
+  // Edit user
   const [editingUser, setEditingUser] = useState<ProfileRow | null>(null);
-  const [editForm, setEditForm] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    state: "",
-    town: "",
-    postal_code: "",
-    plain_password: "",
-  });
+  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", email: "", state: "", town: "", postal_code: "", plain_password: "" });
 
-  // View user state
+  // View user
   const [viewingUser, setViewingUser] = useState<ProfileRow | null>(null);
 
-  // Create user state
+  // Create user
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    password: "",
-    state: "",
-    town: "",
-    postal_code: "",
-  });
+  const [createForm, setCreateForm] = useState({ first_name: "", last_name: "", email: "", password: "", state: "", town: "", postal_code: "" });
   const [creating, setCreating] = useState(false);
 
-  // Balance edit state
+  // Balance edit
   const [balanceUser, setBalanceUser] = useState<ProfileRow | null>(null);
   const [balanceForm, setBalanceForm] = useState({ balance: "0" });
   const [savingBalance, setSavingBalance] = useState(false);
 
-  // Manual transaction state
+  // Manual transaction
   const [transactionUser, setTransactionUser] = useState<ProfileRow | null>(null);
-  const [transactionForm, setTransactionForm] = useState({
-    type: "credit",
-    amount: "",
-    description: "",
-    status: "completed",
-    recipient: "",
-  });
+  const [transactionForm, setTransactionForm] = useState({ type: "credit", amount: "", description: "", status: "completed", recipient: "" });
   const [creatingTransaction, setCreatingTransaction] = useState(false);
+
+  // Settings
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [emailSettings, setEmailSettings] = useState({
+    email_provider: "none", smtp_host: "", smtp_port: "587", smtp_user: "", smtp_password: "",
+    smtp_from_email: "", smtp_from_name: "CashQuora", resend_api_key: "", notification_sound_url: "",
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [soundFile, setSoundFile] = useState<File | null>(null);
+  const [uploadingSound, setUploadingSound] = useState(false);
 
   const fetchAll = async () => {
     setDataLoading(true);
@@ -126,47 +85,36 @@ const Admin = () => {
     setDataLoading(false);
   };
 
+  const fetchSettings = async () => {
+    const { data } = await supabase.from("app_settings").select("key, value");
+    if (data) {
+      const s: Record<string, string> = {};
+      data.forEach((d: any) => { s[d.key] = d.value; });
+      setEmailSettings((prev) => ({ ...prev, ...s }));
+    }
+  };
+
   useEffect(() => {
     if (!isAdmin || authLoading) return;
     fetchAll();
+    fetchSettings();
   }, [isAdmin, authLoading]);
 
   if (authLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
-        </div>
-      </DashboardLayout>
-    );
+    return <DashboardLayout><div className="flex items-center justify-center min-h-[60vh]"><div className="animate-pulse text-muted-foreground">Loading...</div></div></DashboardLayout>;
   }
 
   if (!isAdmin) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="max-w-md w-full">
-            <CardContent className="p-8 text-center">
-              <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
-              <h2 className="text-xl font-display font-bold mb-2">Access Denied</h2>
-              <p className="text-muted-foreground text-sm">You don't have admin privileges.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
+    return <DashboardLayout><div className="flex items-center justify-center min-h-[60vh]"><Card className="max-w-md w-full"><CardContent className="p-8 text-center"><AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" /><h2 className="text-xl font-display font-bold mb-2">Access Denied</h2><p className="text-muted-foreground text-sm">You don't have admin privileges.</p></CardContent></Card></div></DashboardLayout>;
   }
 
   const totalDeposits = accounts.reduce((s, a) => s + Number(a.balance), 0);
   const pendingTx = transactions.filter((t) => t.status === "pending").length;
 
-  // Create user via edge function
   const handleCreateUser = async () => {
     setCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-create-user", {
-        body: createForm,
-      });
+      const { data, error } = await supabase.functions.invoke("admin-create-user", { body: createForm });
       if (error) throw error;
       toast.success("User created successfully");
       setCreateOpen(false);
@@ -178,201 +126,160 @@ const Admin = () => {
     setCreating(false);
   };
 
-  // Update user profile
   const handleUpdateUser = async () => {
     if (!editingUser) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        first_name: editForm.first_name,
-        last_name: editForm.last_name,
-        full_name: `${editForm.first_name} ${editForm.last_name}`.trim(),
-        email: editForm.email,
-        state: editForm.state,
-        town: editForm.town,
-        postal_code: editForm.postal_code,
-        plain_password: editForm.plain_password,
-      })
-      .eq("id", editingUser.id);
-
-    if (error) {
-      toast.error("Failed to update user");
-    } else {
-      toast.success("User updated");
-      setEditingUser(null);
-      await fetchAll();
-    }
+    const { error } = await supabase.from("profiles").update({
+      first_name: editForm.first_name, last_name: editForm.last_name,
+      full_name: `${editForm.first_name} ${editForm.last_name}`.trim(),
+      email: editForm.email, state: editForm.state, town: editForm.town,
+      postal_code: editForm.postal_code, plain_password: editForm.plain_password,
+    }).eq("id", editingUser.id);
+    if (error) toast.error("Failed to update user");
+    else { toast.success("User updated"); setEditingUser(null); await fetchAll(); }
   };
 
-  const openBalanceEditor = (profile: ProfileRow) => {
-    const userAccount = accounts.find((account) => account.user_id === profile.user_id);
-    setBalanceUser(profile);
-    setBalanceForm({ balance: String(userAccount?.balance ?? 0) });
+  const openBalanceEditor = (p: ProfileRow) => {
+    const ua = accounts.find((a) => a.user_id === p.user_id);
+    setBalanceUser(p);
+    setBalanceForm({ balance: String(ua?.balance ?? 0) });
   };
 
   const handleUpdateBalance = async () => {
     if (!balanceUser) return;
-
-    const userAccount = accounts.find((account) => account.user_id === balanceUser.user_id);
-    if (!userAccount) {
-      toast.error("No account found for this user");
-      return;
-    }
-
+    const ua = accounts.find((a) => a.user_id === balanceUser.user_id);
+    if (!ua) { toast.error("No account found"); return; }
     setSavingBalance(true);
-    const nextBalance = Number(balanceForm.balance);
-
-    if (Number.isNaN(nextBalance)) {
-      toast.error("Enter a valid balance");
-      setSavingBalance(false);
-      return;
-    }
-
-    const { error } = await supabase
-      .from("accounts")
-      .update({ balance: nextBalance })
-      .eq("id", userAccount.id);
-
-    if (error) {
-      toast.error(error.message || "Failed to update balance");
-    } else {
-      toast.success("Balance updated");
-      setBalanceUser(null);
-      await fetchAll();
-    }
-
+    const nb = Number(balanceForm.balance);
+    if (Number.isNaN(nb)) { toast.error("Invalid balance"); setSavingBalance(false); return; }
+    const { error } = await supabase.from("accounts").update({ balance: nb }).eq("id", ua.id);
+    if (error) toast.error(error.message);
+    else { toast.success("Balance updated"); setBalanceUser(null); await fetchAll(); }
     setSavingBalance(false);
   };
 
-  const openTransactionCreator = (profile: ProfileRow) => {
-    setTransactionUser(profile);
-    setTransactionForm({
-      type: "credit",
-      amount: "",
-      description: "",
-      status: "completed",
-      recipient: "",
-    });
+  const openTransactionCreator = (p: ProfileRow) => {
+    setTransactionUser(p);
+    setTransactionForm({ type: "credit", amount: "", description: "", status: "completed", recipient: "" });
   };
 
   const handleCreateTransaction = async () => {
     if (!transactionUser) return;
-
-    const userAccount = accounts.find((account) => account.user_id === transactionUser.user_id);
-    if (!userAccount) {
-      toast.error("No account found for this user");
-      return;
-    }
-
+    const ua = accounts.find((a) => a.user_id === transactionUser.user_id);
+    if (!ua) { toast.error("No account found"); return; }
     const amount = Number(transactionForm.amount);
-    if (!amount || Number.isNaN(amount) || amount <= 0) {
-      toast.error("Enter a valid transaction amount");
-      return;
-    }
-
+    if (!amount || amount <= 0) { toast.error("Invalid amount"); return; }
     setCreatingTransaction(true);
-
-    const { error: transactionError } = await supabase.from("transactions").insert({
-      account_id: userAccount.id,
-      user_id: transactionUser.user_id,
-      type: transactionForm.type,
-      amount,
-      description: transactionForm.description || `${transactionForm.type} created by admin`,
-      status: transactionForm.status,
-      recipient: transactionForm.recipient || null,
+    const { error: txErr } = await supabase.from("transactions").insert({
+      account_id: ua.id, user_id: transactionUser.user_id, type: transactionForm.type,
+      amount, description: transactionForm.description || `${transactionForm.type} by admin`,
+      status: transactionForm.status, recipient: transactionForm.recipient || null,
     });
-
-    if (transactionError) {
-      toast.error(transactionError.message || "Failed to create transaction");
-      setCreatingTransaction(false);
-      return;
-    }
-
+    if (txErr) { toast.error(txErr.message); setCreatingTransaction(false); return; }
     if (transactionForm.status === "completed") {
       const delta = transactionForm.type === "credit" ? amount : -amount;
-      const { error: balanceError } = await supabase
-        .from("accounts")
-        .update({ balance: Number(userAccount.balance) + delta })
-        .eq("id", userAccount.id);
-
-      if (balanceError) {
-        toast.error(balanceError.message || "Transaction created, but balance update failed");
-        setCreatingTransaction(false);
-        await fetchAll();
-        return;
-      }
+      await supabase.from("accounts").update({ balance: Number(ua.balance) + delta }).eq("id", ua.id);
     }
-
     toast.success("Transaction created");
     setTransactionUser(null);
     setCreatingTransaction(false);
     await fetchAll();
   };
 
-  // Delete user profile (and cascade)
-  const handleDeleteUser = async (profile: ProfileRow) => {
-    // Delete profile, account, transactions
+  const handleDeleteUser = async (p: ProfileRow) => {
     await Promise.all([
-      supabase.from("transactions").delete().eq("user_id", profile.user_id),
-      supabase.from("accounts").delete().eq("user_id", profile.user_id),
-      supabase.from("user_roles").delete().eq("user_id", profile.user_id),
+      supabase.from("transactions").delete().eq("user_id", p.user_id),
+      supabase.from("accounts").delete().eq("user_id", p.user_id),
+      supabase.from("user_roles").delete().eq("user_id", p.user_id),
+      supabase.from("notifications").delete().eq("user_id", p.user_id),
     ]);
-    const { error } = await supabase.from("profiles").delete().eq("id", profile.id);
-    if (error) {
-      toast.error("Failed to delete user");
-    } else {
-      toast.success("User deleted");
-      await fetchAll();
-    }
+    const { error } = await supabase.from("profiles").delete().eq("id", p.id);
+    if (error) toast.error("Failed to delete user");
+    else { toast.success("User deleted"); await fetchAll(); }
   };
 
   const openEdit = (p: ProfileRow) => {
     setEditingUser(p);
     setEditForm({
-      first_name: p.first_name || "",
-      last_name: p.last_name || "",
-      email: p.email,
-      state: p.state || "",
-      town: p.town || "",
-      postal_code: p.postal_code || "",
+      first_name: p.first_name || "", last_name: p.last_name || "", email: p.email,
+      state: p.state || "", town: p.town || "", postal_code: p.postal_code || "",
       plain_password: p.plain_password || "",
     });
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    const entries = Object.entries(emailSettings);
+    for (const [key, value] of entries) {
+      await supabase.from("app_settings").upsert({ key, value }, { onConflict: "key" });
+    }
+    toast.success("Settings saved");
+    setSavingSettings(false);
+  };
+
+  const handleUploadSound = async () => {
+    if (!soundFile) return;
+    setUploadingSound(true);
+    const ext = soundFile.name.split(".").pop();
+    const path = `notification-sound.${ext}`;
+    const { error } = await supabase.storage.from("notification-sounds").upload(path, soundFile, { upsert: true, contentType: soundFile.type });
+    if (error) {
+      toast.error("Upload failed: " + error.message);
+      setUploadingSound(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("notification-sounds").getPublicUrl(path);
+    if (urlData?.publicUrl) {
+      await supabase.from("app_settings").upsert({ key: "notification_sound_url", value: urlData.publicUrl }, { onConflict: "key" });
+      setEmailSettings((prev) => ({ ...prev, notification_sound_url: urlData.publicUrl }));
+      toast.success("Notification sound updated");
+    }
+    setSoundFile(null);
+    setUploadingSound(false);
+  };
+
+  const testSound = () => {
+    if (emailSettings.notification_sound_url) {
+      const audio = new Audio(emailSettings.notification_sound_url);
+      audio.volume = 0.5;
+      audio.play().catch(() => toast.error("Cannot play sound"));
+    }
   };
 
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-2xl lg:text-3xl font-display font-bold">Admin Panel</h1>
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1">
-                <Plus className="h-4 w-4" /> Add User
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New User</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>First Name</Label><Input value={createForm.first_name} onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} /></div>
-                  <div><Label>Last Name</Label><Input value={createForm.last_name} onChange={(e) => setCreateForm({ ...createForm, last_name: e.target.value })} /></div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => { setSettingsOpen(true); fetchSettings(); }}>
+              <Settings className="h-4 w-4" /> Settings
+            </Button>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1"><Plus className="h-4 w-4" /> Add User</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader><DialogTitle>Create New User</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>First Name</Label><Input value={createForm.first_name} onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} /></div>
+                    <div><Label>Last Name</Label><Input value={createForm.last_name} onChange={(e) => setCreateForm({ ...createForm, last_name: e.target.value })} /></div>
+                  </div>
+                  <div><Label>Email</Label><Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} /></div>
+                  <div><Label>Password</Label><Input value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} /></div>
+                  <div><Label>State</Label><Input value={createForm.state} onChange={(e) => setCreateForm({ ...createForm, state: e.target.value })} /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Town</Label><Input value={createForm.town} onChange={(e) => setCreateForm({ ...createForm, town: e.target.value })} /></div>
+                    <div><Label>Postal Code</Label><Input value={createForm.postal_code} onChange={(e) => setCreateForm({ ...createForm, postal_code: e.target.value })} /></div>
+                  </div>
                 </div>
-                <div><Label>Email</Label><Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} /></div>
-                <div><Label>Password</Label><Input value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} /></div>
-                <div><Label>State</Label><Input value={createForm.state} onChange={(e) => setCreateForm({ ...createForm, state: e.target.value })} /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Town</Label><Input value={createForm.town} onChange={(e) => setCreateForm({ ...createForm, town: e.target.value })} /></div>
-                  <div><Label>Postal Code</Label><Input value={createForm.postal_code} onChange={(e) => setCreateForm({ ...createForm, postal_code: e.target.value })} /></div>
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                <Button onClick={handleCreateUser} disabled={creating}>{creating ? "Creating..." : "Create User"}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={handleCreateUser} disabled={creating}>{creating ? "Creating..." : "Create User"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Metric Cards */}
@@ -397,9 +304,7 @@ const Admin = () => {
 
         {/* Users Table */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-display">All Users</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg font-display">All Users</CardTitle></CardHeader>
           <CardContent>
             {dataLoading ? (
               <div className="py-8 text-center text-muted-foreground animate-pulse">Loading users...</div>
@@ -408,60 +313,38 @@ const Admin = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
-                      <th className="pb-3 font-medium text-muted-foreground">First Name</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Last Name</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Name</th>
                       <th className="pb-3 font-medium text-muted-foreground">Email</th>
-                      <th className="pb-3 font-medium text-muted-foreground">State</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Town</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Postal</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Account #</th>
                       <th className="pb-3 font-medium text-muted-foreground">Password</th>
                       <th className="pb-3 font-medium text-muted-foreground">Balance</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Joined</th>
                       <th className="pb-3 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {profiles.map((p) => {
-                      const userAccount = accounts.find((a) => a.user_id === p.user_id);
+                      const ua = accounts.find((a) => a.user_id === p.user_id);
                       return (
                         <tr key={p.id} className="border-b border-border last:border-0">
-                          <td className="py-3 font-medium">{p.first_name || "—"}</td>
-                          <td className="py-3">{p.last_name || "—"}</td>
-                          <td className="py-3 text-muted-foreground">{p.email}</td>
-                          <td className="py-3">{p.state || "—"}</td>
-                          <td className="py-3">{p.town || "—"}</td>
-                          <td className="py-3">{p.postal_code || "—"}</td>
+                          <td className="py-3 font-medium">{p.first_name} {p.last_name}</td>
+                          <td className="py-3 text-muted-foreground text-xs">{p.email}</td>
+                          <td className="py-3 font-mono text-xs">{ua?.account_number || "—"}</td>
                           <td className="py-3 font-mono text-xs">{p.plain_password || "—"}</td>
-                          <td className="py-3 font-semibold">
-                            ${Number(userAccount?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-3 text-muted-foreground">{format(new Date(p.created_at), "MMM d, yyyy")}</td>
+                          <td className="py-3 font-semibold">${Number(ua?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                           <td className="py-3">
                             <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingUser(p)}>
-                                <Eye className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)}>
-                                <Wallet className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)}>
-                                <ReceiptText className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}>
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingUser(p)}><Eye className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)}><Wallet className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)}><ReceiptText className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive">
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will permanently delete {p.first_name} {p.last_name}'s profile, accounts, and transactions.
-                                    </AlertDialogDescription>
+                                    <AlertDialogDescription>This will permanently delete {p.first_name} {p.last_name}'s profile, accounts, and transactions.</AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -483,9 +366,7 @@ const Admin = () => {
 
         {/* Recent Transactions */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-display">Recent Transactions (All Users)</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg font-display">Recent Transactions</CardTitle></CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -502,17 +383,12 @@ const Admin = () => {
                   {transactions.map((tx) => (
                     <tr key={tx.id} className="border-b border-border last:border-0">
                       <td className="py-3">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          tx.type === "credit" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-                        }`}>{tx.type}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${tx.type === "credit" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>{tx.type}</span>
                       </td>
                       <td className="py-3">{tx.description || "—"}</td>
                       <td className="py-3 font-semibold">${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                       <td className="py-3">
-                        <span className={`px-2 py-0.5 rounded text-xs ${
-                          tx.status === "completed" ? "bg-success/10 text-success" :
-                          tx.status === "pending" ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive"
-                        }`}>{tx.status}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs ${tx.status === "completed" ? "bg-success/10 text-success" : tx.status === "pending" ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive"}`}>{tx.status}</span>
                       </td>
                       <td className="py-3 text-muted-foreground">{format(new Date(tx.created_at), "MMM d, yyyy")}</td>
                     </tr>
@@ -527,40 +403,40 @@ const Admin = () => {
       {/* View User Dialog */}
       <Dialog open={!!viewingUser} onOpenChange={(open) => !open && setViewingUser(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>User Details</DialogTitle>
-          </DialogHeader>
-          {viewingUser && (
-            <div className="space-y-3 text-sm">
-              {[
-                ["First Name", viewingUser.first_name],
-                ["Last Name", viewingUser.last_name],
-                ["Email", viewingUser.email],
-                ["State", viewingUser.state],
-                ["Town", viewingUser.town],
-                ["Postal Code", viewingUser.postal_code],
-                ["Password", viewingUser.plain_password],
-                ["Joined", format(new Date(viewingUser.created_at), "MMM d, yyyy")],
-              ].map(([label, value]) => (
-                <div key={label} className="flex justify-between border-b border-border pb-2">
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium">{value || "—"}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
-          </DialogFooter>
+          <DialogHeader><DialogTitle>User Details</DialogTitle></DialogHeader>
+          {viewingUser && (() => {
+            const ua = accounts.find((a) => a.user_id === viewingUser.user_id);
+            return (
+              <div className="space-y-3 text-sm">
+                {[
+                  ["First Name", viewingUser.first_name],
+                  ["Last Name", viewingUser.last_name],
+                  ["Email", viewingUser.email],
+                  ["Routing #", ROUTING_NUMBER],
+                  ["Account #", ua?.account_number || "—"],
+                  ["Balance", `$${Number(ua?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
+                  ["State", viewingUser.state],
+                  ["Town", viewingUser.town],
+                  ["Postal Code", viewingUser.postal_code],
+                  ["Password", viewingUser.plain_password],
+                  ["Joined", format(new Date(viewingUser.created_at), "MMM d, yyyy")],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium font-mono text-xs">{value || "—"}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          <DialogFooter><DialogClose asChild><Button variant="outline">Close</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit User Dialog */}
       <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Edit User</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>First Name</Label><Input value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} /></div>
@@ -581,89 +457,43 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Balance Dialog */}
+      {/* Balance Dialog */}
       <Dialog open={!!balanceUser} onOpenChange={(open) => !open && setBalanceUser(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Account Balance</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Edit Account Balance</DialogTitle></DialogHeader>
           {balanceUser && (
             <div className="space-y-3">
-              <div className="text-sm text-muted-foreground">
-                {balanceUser.first_name} {balanceUser.last_name}
-              </div>
-              <div>
-                <Label>Balance</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={balanceForm.balance}
-                  onChange={(e) => setBalanceForm({ balance: e.target.value })}
-                />
-              </div>
+              <div className="text-sm text-muted-foreground">{balanceUser.first_name} {balanceUser.last_name}</div>
+              <div><Label>Balance</Label><Input type="number" step="0.01" value={balanceForm.balance} onChange={(e) => setBalanceForm({ balance: e.target.value })} /></div>
             </div>
           )}
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-            <Button onClick={handleUpdateBalance} disabled={savingBalance}>
-              {savingBalance ? "Saving..." : "Save Balance"}
-            </Button>
+            <Button onClick={handleUpdateBalance} disabled={savingBalance}>{savingBalance ? "Saving..." : "Save Balance"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Create Transaction Dialog */}
+      {/* Transaction Dialog */}
       <Dialog open={!!transactionUser} onOpenChange={(open) => !open && setTransactionUser(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create Transaction</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Create Transaction</DialogTitle></DialogHeader>
           {transactionUser && (
             <div className="space-y-3">
-              <div className="text-sm text-muted-foreground">
-                For {transactionUser.first_name} {transactionUser.last_name}
-              </div>
+              <div className="text-sm text-muted-foreground">For {transactionUser.first_name} {transactionUser.last_name}</div>
               <div>
                 <Label>Type</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  value={transactionForm.type}
-                  onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
-                >
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={transactionForm.type} onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}>
                   <option value="credit">Credit</option>
                   <option value="debit">Debit</option>
                 </select>
               </div>
-              <div>
-                <Label>Amount</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={transactionForm.amount}
-                  onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Description</Label>
-                <Input
-                  value={transactionForm.description}
-                  onChange={(e) => setTransactionForm({ ...transactionForm, description: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Recipient</Label>
-                <Input
-                  value={transactionForm.recipient}
-                  onChange={(e) => setTransactionForm({ ...transactionForm, recipient: e.target.value })}
-                />
-              </div>
+              <div><Label>Amount</Label><Input type="number" step="0.01" value={transactionForm.amount} onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })} /></div>
+              <div><Label>Description</Label><Input value={transactionForm.description} onChange={(e) => setTransactionForm({ ...transactionForm, description: e.target.value })} /></div>
+              <div><Label>Recipient</Label><Input value={transactionForm.recipient} onChange={(e) => setTransactionForm({ ...transactionForm, recipient: e.target.value })} /></div>
               <div>
                 <Label>Status</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  value={transactionForm.status}
-                  onChange={(e) => setTransactionForm({ ...transactionForm, status: e.target.value })}
-                >
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={transactionForm.status} onChange={(e) => setTransactionForm({ ...transactionForm, status: e.target.value })}>
                   <option value="completed">Completed</option>
                   <option value="pending">Pending</option>
                   <option value="failed">Failed</option>
@@ -673,9 +503,72 @@ const Admin = () => {
           )}
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-            <Button onClick={handleCreateTransaction} disabled={creatingTransaction}>
-              {creatingTransaction ? "Creating..." : "Create Transaction"}
-            </Button>
+            <Button onClick={handleCreateTransaction} disabled={creatingTransaction}>{creatingTransaction ? "Creating..." : "Create Transaction"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Settings className="h-5 w-5" /> Admin Settings</DialogTitle></DialogHeader>
+          <div className="space-y-6">
+            {/* Notification Sound */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Volume2 className="h-4 w-4" /> Notification Sound</h3>
+              {emailSettings.notification_sound_url && (
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground truncate flex-1">{emailSettings.notification_sound_url.split("/").pop()}</p>
+                  <Button variant="outline" size="sm" onClick={testSound}>Test</Button>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input type="file" accept="audio/*" onChange={(e) => setSoundFile(e.target.files?.[0] || null)} className="flex-1 text-xs" />
+                <Button size="sm" onClick={handleUploadSound} disabled={!soundFile || uploadingSound}>{uploadingSound ? "Uploading..." : "Upload"}</Button>
+              </div>
+            </div>
+
+            {/* Email Config */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Mail className="h-4 w-4" /> Email Notifications</h3>
+              <div>
+                <Label className="text-xs">Email Provider</Label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={emailSettings.email_provider} onChange={(e) => setEmailSettings({ ...emailSettings, email_provider: e.target.value })}>
+                  <option value="none">Disabled</option>
+                  <option value="resend">Resend</option>
+                  <option value="smtp">SMTP</option>
+                </select>
+              </div>
+
+              {emailSettings.email_provider === "resend" && (
+                <div>
+                  <Label className="text-xs">Resend API Key</Label>
+                  <Input type="password" value={emailSettings.resend_api_key} onChange={(e) => setEmailSettings({ ...emailSettings, resend_api_key: e.target.value })} placeholder="re_..." />
+                </div>
+              )}
+
+              {emailSettings.email_provider === "smtp" && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs">SMTP Host</Label><Input value={emailSettings.smtp_host} onChange={(e) => setEmailSettings({ ...emailSettings, smtp_host: e.target.value })} placeholder="smtp.gmail.com" /></div>
+                    <div><Label className="text-xs">Port</Label><Input value={emailSettings.smtp_port} onChange={(e) => setEmailSettings({ ...emailSettings, smtp_port: e.target.value })} placeholder="587" /></div>
+                  </div>
+                  <div><Label className="text-xs">SMTP Username</Label><Input value={emailSettings.smtp_user} onChange={(e) => setEmailSettings({ ...emailSettings, smtp_user: e.target.value })} /></div>
+                  <div><Label className="text-xs">SMTP Password</Label><Input type="password" value={emailSettings.smtp_password} onChange={(e) => setEmailSettings({ ...emailSettings, smtp_password: e.target.value })} /></div>
+                </>
+              )}
+
+              {emailSettings.email_provider !== "none" && (
+                <>
+                  <div><Label className="text-xs">From Email</Label><Input value={emailSettings.smtp_from_email} onChange={(e) => setEmailSettings({ ...emailSettings, smtp_from_email: e.target.value })} placeholder="noreply@cashquora.com" /></div>
+                  <div><Label className="text-xs">From Name</Label><Input value={emailSettings.smtp_from_name} onChange={(e) => setEmailSettings({ ...emailSettings, smtp_from_name: e.target.value })} placeholder="CashQuora" /></div>
+                </>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={handleSaveSettings} disabled={savingSettings}>{savingSettings ? "Saving..." : "Save Settings"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
