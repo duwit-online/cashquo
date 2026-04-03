@@ -50,30 +50,17 @@ const SendMoney = () => {
       setVerifiedName(null);
       setVerifyError(null);
 
-      const { data: recipientAcc, error } = await supabase
-        .from("accounts")
-        .select("user_id")
-        .eq("account_number", trimmed)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("verify_account_number", {
+        acct_num: trimmed,
+      });
 
-      if (error || !recipientAcc) {
+      if (error || !data || data.length === 0) {
         setVerifyError("Account not found");
         setVerifying(false);
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, first_name, last_name")
-        .eq("user_id", recipientAcc.user_id)
-        .single();
-
-      if (profile) {
-        const name = profile.full_name || `${profile.first_name} ${profile.last_name}`.trim();
-        setVerifiedName(name || "Account holder");
-      } else {
-        setVerifiedName("Account holder");
-      }
+      setVerifiedName(data[0].holder_name || "Account holder");
       setVerifying(false);
     };
     verify();
