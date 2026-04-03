@@ -138,7 +138,7 @@ const SendMoney = () => {
       supabase.from("accounts").update({ balance: Number(recipientAcc.balance) + amt }).eq("id", recipientAcc.id),
     ]);
 
-    // Try to send email notification to recipient (fire and forget)
+    // Trigger email notifications (fire and forget)
     const { data: recipientProfileEmail } = await supabase
       .from("profiles")
       .select("email")
@@ -146,12 +146,40 @@ const SendMoney = () => {
       .single();
 
     if (recipientProfileEmail?.email) {
-      supabase.functions.invoke("send-email-notification", {
+      // Credit email to recipient
+      supabase.functions.invoke("trigger-email", {
         body: {
-          user_id: recipientAcc.user_id,
-          amount: amt,
-          sender_name: senderName,
+          trigger_type: "credit",
           recipient_email: recipientProfileEmail.email,
+          variables: {
+            account_name: recipientName,
+            amount: amt.toFixed(2),
+            sender: senderName,
+            transaction_id: "N/A",
+            description: desc,
+            account_number: recipientAccNum.trim(),
+            transaction_type: "credit",
+          },
+        },
+      }).catch(() => {});
+    }
+
+    // Debit email to sender
+    const senderEmail = user.email;
+    if (senderEmail) {
+      supabase.functions.invoke("trigger-email", {
+        body: {
+          trigger_type: "debit",
+          recipient_email: senderEmail,
+          variables: {
+            account_name: senderName,
+            amount: amt.toFixed(2),
+            sender: recipientName,
+            transaction_id: "N/A",
+            description: desc,
+            account_number: senderAccount.account_number,
+            transaction_type: "debit",
+          },
         },
       }).catch(() => {});
     }
