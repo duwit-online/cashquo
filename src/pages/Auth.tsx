@@ -151,6 +151,18 @@ const Auth = () => {
       }
     }
 
+    // Trigger signup email (fire and forget)
+    supabase.functions.invoke("trigger-email", {
+      body: {
+        trigger_type: "signup",
+        recipient_email: email,
+        variables: {
+          account_name: `${firstName} ${lastName}`.trim(),
+          email,
+        },
+      },
+    }).catch(() => {});
+
     toast.success("Account created! You can now sign in.");
     stopCamera();
     setStep("form");
