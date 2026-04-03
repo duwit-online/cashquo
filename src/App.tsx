@@ -50,6 +50,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </NotificationSoundProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
