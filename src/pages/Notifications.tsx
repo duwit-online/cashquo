@@ -21,35 +21,6 @@ interface Notification {
 const Notifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [selected, setSelected] = useState<Notification | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const initialLoadDone = useRef(false);
-  const soundUrlRef = useRef<string>("https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg");
-
-  // Load notification sound URL from app_settings
-  useEffect(() => {
-    supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "notification_sound_url")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.value) {
-          soundUrlRef.current = data.value;
-        }
-        audioRef.current = new Audio(soundUrlRef.current);
-        audioRef.current.volume = 0.5;
-      });
-  }, []);
-
-  const playSound = () => {
-    try {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
-      }
-    } catch {}
-  };
 
   useEffect(() => {
     if (!user) return;
