@@ -77,6 +77,77 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          recipient_email: string
+          status: string
+          template_id: string | null
+          trigger_type: Database["public"]["Enums"]["email_trigger_type"]
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          status?: string
+          template_id?: string | null
+          trigger_type: Database["public"]["Enums"]["email_trigger_type"]
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          status?: string
+          template_id?: string | null
+          trigger_type?: Database["public"]["Enums"]["email_trigger_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          created_at: string
+          html_body: string
+          id: string
+          is_active: boolean
+          name: string
+          subject: string
+          trigger_type: Database["public"]["Enums"]["email_trigger_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          html_body?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          trigger_type: Database["public"]["Enums"]["email_trigger_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          html_body?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          trigger_type?: Database["public"]["Enums"]["email_trigger_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -235,9 +306,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      verify_account_number: {
+        Args: { acct_num: string }
+        Returns: {
+          account_exists: boolean
+          holder_name: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      email_trigger_type:
+        | "signup"
+        | "login"
+        | "credit"
+        | "debit"
+        | "reversal"
+        | "account_statement"
+        | "new_login"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -366,6 +452,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      email_trigger_type: [
+        "signup",
+        "login",
+        "credit",
+        "debit",
+        "reversal",
+        "account_statement",
+        "new_login",
+      ],
     },
   },
 } as const
