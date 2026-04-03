@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Bell, BellRing, ArrowDownLeft, ArrowUpRight, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { toast } from "sonner";
 
 interface Notification {
   id: string;
