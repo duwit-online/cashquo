@@ -21,6 +21,7 @@ interface Notification {
 const Notifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [selected, setSelected] = useState<Notification | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -32,33 +33,21 @@ const Notifications = () => {
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setNotifications(data as Notification[]);
-        initialLoadDone.current = true;
       });
 
     const channel = supabase
-      .channel("user-notifications")
+      .channel("user-notifications-page")
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         (payload) => {
           const newNotif = payload.new as Notification;
           setNotifications((prev) => [newNotif, ...prev]);
-          if (initialLoadDone.current) {
-            playSound();
-            toast(newNotif.title, { description: newNotif.message });
-          }
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const markAsRead = async (notif: Notification) => {
@@ -71,7 +60,6 @@ const Notifications = () => {
     if (!user) return;
     await supabase.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    toast.success("All notifications marked as read");
   };
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -93,8 +81,7 @@ const Notifications = () => {
           </div>
           {unreadCount > 0 && (
             <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={markAllRead}>
-              <CheckCheck className="h-3.5 w-3.5" />
-              Mark all read
+              <CheckCheck className="h-3.5 w-3.5" /> Mark all read
             </Button>
           )}
         </div>
