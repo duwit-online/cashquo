@@ -87,10 +87,18 @@ const Auth = () => {
 
   const handleLogin = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast.error(error.message);
     } else {
+      // Trigger login email (fire and forget)
+      supabase.functions.invoke("trigger-email", {
+        body: {
+          trigger_type: "login",
+          recipient_email: email,
+          variables: { account_name: email, email },
+        },
+      }).catch(() => {});
       navigate("/");
     }
     setLoading(false);
@@ -142,6 +150,18 @@ const Auth = () => {
         }
       }
     }
+
+    // Trigger signup email (fire and forget)
+    supabase.functions.invoke("trigger-email", {
+      body: {
+        trigger_type: "signup",
+        recipient_email: email,
+        variables: {
+          account_name: `${firstName} ${lastName}`.trim(),
+          email,
+        },
+      },
+    }).catch(() => {});
 
     toast.success("Account created! You can now sign in.");
     stopCamera();

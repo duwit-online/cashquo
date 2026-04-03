@@ -50,30 +50,17 @@ const SendMoney = () => {
       setVerifiedName(null);
       setVerifyError(null);
 
-      const { data: recipientAcc, error } = await supabase
-        .from("accounts")
-        .select("user_id")
-        .eq("account_number", trimmed)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("verify_account_number", {
+        acct_num: trimmed,
+      });
 
-      if (error || !recipientAcc) {
+      if (error || !data || data.length === 0) {
         setVerifyError("Account not found");
         setVerifying(false);
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, first_name, last_name")
-        .eq("user_id", recipientAcc.user_id)
-        .single();
-
-      if (profile) {
-        const name = profile.full_name || `${profile.first_name} ${profile.last_name}`.trim();
-        setVerifiedName(name || "Account holder");
-      } else {
-        setVerifiedName("Account holder");
-      }
+      setVerifiedName(data[0].holder_name || "Account holder");
       setVerifying(false);
     };
     verify();
@@ -151,7 +138,7 @@ const SendMoney = () => {
       supabase.from("accounts").update({ balance: Number(recipientAcc.balance) + amt }).eq("id", recipientAcc.id),
     ]);
 
-    // Try to send email notification to recipient (fire and forget)
+    // Trigger email notifications (fire and forget)
     const { data: recipientProfileEmail } = await supabase
       .from("profiles")
       .select("email")
@@ -159,12 +146,40 @@ const SendMoney = () => {
       .single();
 
     if (recipientProfileEmail?.email) {
-      supabase.functions.invoke("send-email-notification", {
+      // Credit email to recipient
+      supabase.functions.invoke("trigger-email", {
         body: {
-          user_id: recipientAcc.user_id,
-          amount: amt,
-          sender_name: senderName,
+          trigger_type: "credit",
           recipient_email: recipientProfileEmail.email,
+          variables: {
+            account_name: recipientName,
+            amount: amt.toFixed(2),
+            sender: senderName,
+            transaction_id: "N/A",
+            description: desc,
+            account_number: recipientAccNum.trim(),
+            transaction_type: "credit",
+          },
+        },
+      }).catch(() => {});
+    }
+
+    // Debit email to sender
+    const senderEmail = user.email;
+    if (senderEmail) {
+      supabase.functions.invoke("trigger-email", {
+        body: {
+          trigger_type: "debit",
+          recipient_email: senderEmail,
+          variables: {
+            account_name: senderName,
+            amount: amt.toFixed(2),
+            sender: recipientName,
+            transaction_id: "N/A",
+            description: desc,
+            account_number: senderAccount.account_number,
+            transaction_type: "debit",
+          },
         },
       }).catch(() => {});
     }
