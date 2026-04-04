@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { User, MapPin, Phone, Mail, Copy, CheckCircle2 } from "lucide-react";
 import { ROUTING_NUMBER } from "@/lib/constants";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { US_STATES } from "@/lib/us-states";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -43,12 +46,8 @@ const SettingsPage = () => {
       .from("profiles")
       .update({
         full_name: `${profile.first_name} ${profile.last_name}`.trim(),
-        phone: profile.phone,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        state: profile.state,
-        town: profile.town,
-        postal_code: profile.postal_code,
+        phone: profile.phone, first_name: profile.first_name, last_name: profile.last_name,
+        state: profile.state, town: profile.town, postal_code: profile.postal_code,
       })
       .eq("user_id", user.id);
     if (error) toast.error("Failed to update profile");
@@ -73,17 +72,12 @@ const SettingsPage = () => {
           <p className="text-sm text-muted-foreground mt-1">Manage your personal information</p>
         </div>
 
-        {/* Account info with avatar */}
         <Card className="bg-muted/40">
           <CardContent className="p-5">
             <div className="flex items-center gap-4 mb-4">
               <Avatar className="h-16 w-16 border-2 border-accent/20">
-                {profile.avatar_url ? (
-                  <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                ) : null}
-                <AvatarFallback className="bg-primary text-primary-foreground font-display font-bold text-xl">
-                  {initials}
-                </AvatarFallback>
+                {profile.avatar_url ? <AvatarImage src={profile.avatar_url} alt={profile.full_name} /> : null}
+                <AvatarFallback className="bg-primary text-primary-foreground font-display font-bold text-xl">{initials}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-display font-bold text-lg truncate">{profile.first_name} {profile.last_name}</p>
@@ -146,7 +140,16 @@ const SettingsPage = () => {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs">State</Label>
-              <Input value={profile.state} onChange={(e) => setProfile({ ...profile, state: e.target.value })} />
+              <Select value={profile.state} onValueChange={(v) => setProfile({ ...profile, state: v })}>
+                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                <SelectContent>
+                  <ScrollArea className="h-60">
+                    {US_STATES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </ScrollArea>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

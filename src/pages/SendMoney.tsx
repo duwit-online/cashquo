@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { Send, DollarSign, User, FileText, CheckCircle2, Search, Loader2 } from "lucide-react";
 import { ROUTING_NUMBER } from "@/lib/constants";
 
+const SEND_FORM_KEY = "cashquora_send_form";
+
 const SendMoney = () => {
   const { user } = useAuth();
   const [recipientAccNum, setRecipientAccNum] = useState("");
@@ -20,10 +22,30 @@ const SendMoney = () => {
   const [success, setSuccess] = useState(false);
   const [senderAccount, setSenderAccount] = useState<{ id: string; balance: number; account_number: string } | null>(null);
 
-  // Recipient verification
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  // Restore saved form
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SEND_FORM_KEY);
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (d.recipientAccNum) setRecipientAccNum(d.recipientAccNum);
+        if (d.routingNumber) setRoutingNumber(d.routingNumber);
+        if (d.amount) setAmount(d.amount);
+        if (d.description) setDescription(d.description);
+      }
+    } catch {}
+  }, []);
+
+  // Persist form
+  useEffect(() => {
+    localStorage.setItem(SEND_FORM_KEY, JSON.stringify({ recipientAccNum, routingNumber, amount, description }));
+  }, [recipientAccNum, routingNumber, amount, description]);
+
+  const clearSavedForm = () => localStorage.removeItem(SEND_FORM_KEY);
 
   useEffect(() => {
     if (!user) return;
@@ -31,7 +53,7 @@ const SendMoney = () => {
       .then(({ data }) => { if (data) setSenderAccount(data); });
   }, [user]);
 
-  // Verify recipient when account number reaches 11 digits
+  // Verify recipient
   useEffect(() => {
     const trimmed = recipientAccNum.trim();
     if (trimmed.length !== 11 || !/^\d{11}$/.test(trimmed)) {
@@ -50,9 +72,7 @@ const SendMoney = () => {
       setVerifiedName(null);
       setVerifyError(null);
 
-      const { data, error } = await supabase.rpc("verify_account_number", {
-        acct_num: trimmed,
-      });
+      const { data, error } = await supabase.rpc("verify_account_number", { acct_num: trimmed });
 
       if (error || !data || data.length === 0) {
         setVerifyError("Account not found");
@@ -69,10 +89,7 @@ const SendMoney = () => {
   const handleSend = async () => {
     if (!user || !senderAccount) return;
 
-    if (routingNumber.trim() !== ROUTING_NUMBER) {
-      toast.error("Invalid routing number");
-      return;
-    }
+    if (routingNumber.trim() !== ROUTING_NUMBER) { toast.error("Invalid routing number"); return; }
 
     const amt = Number(amount);
     if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
@@ -83,24 +100,20 @@ const SendMoney = () => {
 
     setSending(true);
 
-    const { data: recipientAcc, error: findErr } = await supabase
-      .from("accounts")
-      .select("id, user_id, balance, account_number")
-      .eq("account_number", recipientAccNum.trim())
-      .maybeSingle();
-
-    if (findErr || !recipientAcc) {
+    // Use RPC to get recipient info securely (bypasses RLS)
+    const { data: verifyData } = await supabase.rpc("verify_account_number", { acct_num: recipientAccNum.trim() });
+    if (!verifyData || verifyData.length === 0) {
       toast.error("Recipient account not found.");
       setSending(false);
       return;
     }
 
-    const { data: recipientProfile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", recipientAcc.user_id)
-      .single();
+    // Now we need to use a different approach: insert transactions and let server handle balance
+    // The issue is RLS prevents reading other user's accounts. We need an edge function for transfers.
+    // For now, use the admin-level approach: the sender inserts their own transaction,
+    // and we use a database function for the recipient side.
 
+    // Get sender profile name
     const { data: senderProfile } = await supabase
       .from("profiles")
       .select("full_name")
@@ -109,8 +122,9 @@ const SendMoney = () => {
 
     const desc = description || "Money Transfer";
     const senderName = senderProfile?.full_name || user.email || "Someone";
-    const recipientName = recipientProfile?.full_name || recipientAccNum;
+    const recipientName = verifiedName;
 
+    // Insert sender's debit transaction
     const { error: debitErr } = await supabase.from("transactions").insert({
       account_id: senderAccount.id,
       user_id: user.id,
@@ -123,54 +137,26 @@ const SendMoney = () => {
 
     if (debitErr) { toast.error("Transfer failed"); setSending(false); return; }
 
-    await supabase.from("transactions").insert({
-      account_id: recipientAcc.id,
-      user_id: recipientAcc.user_id,
-      type: "credit",
-      amount: amt,
-      description: desc,
-      status: "completed",
-      recipient: senderName,
+    // Update sender balance (user can update own account)
+    await supabase.from("accounts").update({ balance: Number(senderAccount.balance) - amt }).eq("id", senderAccount.id);
+
+    // Use edge function to handle recipient side (needs service role to bypass RLS)
+    await supabase.functions.invoke("process-transfer", {
+      body: {
+        recipient_account_number: recipientAccNum.trim(),
+        amount: amt,
+        description: desc,
+        sender_name: senderName,
+      },
     });
 
-    await Promise.all([
-      supabase.from("accounts").update({ balance: Number(senderAccount.balance) - amt }).eq("id", senderAccount.id),
-      supabase.from("accounts").update({ balance: Number(recipientAcc.balance) + amt }).eq("id", recipientAcc.id),
-    ]);
-
-    // Trigger email notifications (fire and forget)
-    const { data: recipientProfileEmail } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("user_id", recipientAcc.user_id)
-      .single();
-
-    if (recipientProfileEmail?.email) {
-      // Credit email to recipient
-      supabase.functions.invoke("trigger-email", {
-        body: {
-          trigger_type: "credit",
-          recipient_email: recipientProfileEmail.email,
-          variables: {
-            account_name: recipientName,
-            amount: amt.toFixed(2),
-            sender: senderName,
-            transaction_id: "N/A",
-            description: desc,
-            account_number: recipientAccNum.trim(),
-            transaction_type: "credit",
-          },
-        },
-      }).catch(() => {});
-    }
-
+    // Fire email notifications
     // Debit email to sender
-    const senderEmail = user.email;
-    if (senderEmail) {
+    if (user.email) {
       supabase.functions.invoke("trigger-email", {
         body: {
           trigger_type: "debit",
-          recipient_email: senderEmail,
+          recipient_email: user.email,
           variables: {
             account_name: senderName,
             amount: amt.toFixed(2),
@@ -188,6 +174,7 @@ const SendMoney = () => {
     setSenderAccount({ ...senderAccount, balance: Number(senderAccount.balance) - amt });
     setSuccess(true);
     setSending(false);
+    clearSavedForm();
   };
 
   if (success) {
@@ -284,23 +271,15 @@ const SendMoney = () => {
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" /> Amount (USD)</Label>
               <Input
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                type="number" step="0.01" min="0.01" placeholder="0.00"
+                value={amount} onChange={(e) => setAmount(e.target.value)}
                 className="text-lg font-display font-bold"
               />
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Note (optional)</Label>
-              <Input
-                placeholder="What's this for?"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <Input placeholder="What's this for?" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
 
             <Button className="w-full h-11 gap-2" onClick={handleSend} disabled={sending || !verifiedName}>

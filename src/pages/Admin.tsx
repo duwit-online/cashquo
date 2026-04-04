@@ -53,6 +53,11 @@ const Admin = () => {
   const [transactionForm, setTransactionForm] = useState({ type: "credit", amount: "", description: "", status: "completed", recipient: "" });
   const [creatingTransaction, setCreatingTransaction] = useState(false);
 
+  // Delete confirmation (double confirm)
+  const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
+  const [deletingUser, setDeletingUser] = useState<ProfileRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // Settings
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [emailSettings, setEmailSettings] = useState({
@@ -150,13 +155,24 @@ const Admin = () => {
     else { toast.success("User updated"); setEditingUser(null); await fetchAll(); }
   };
 
-  const handleDeleteUser = async (p: ProfileRow) => {
+  const startDeleteUser = (p: ProfileRow) => {
+    setDeletingUser(p);
+    setDeleteStep(1);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    setDeleting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { user_id: p.user_id } });
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { user_id: deletingUser.user_id } });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       toast.success("User permanently deleted");
+      setDeletingUser(null);
+      setDeleteStep(0);
       await fetchAll();
     } catch (err: any) { toast.error(err.message || "Failed to delete user"); }
+    setDeleting(false);
   };
 
   const openEdit = (p: ProfileRow) => {
@@ -404,19 +420,7 @@ const Admin = () => {
                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)}><Wallet className="h-3.5 w-3.5" /></Button>
                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)}><ReceiptText className="h-3.5 w-3.5" /></Button>
                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                        <AlertDialogDescription>This will permanently delete {p.first_name} {p.last_name}'s account from the system entirely. This cannot be undone.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteUser(p)}>Delete</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => startDeleteUser(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
                                 </div>
                               </td>
                             </tr>
@@ -801,6 +805,41 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Double-confirm delete dialogs */}
+      <AlertDialog open={deleteStep === 1} onOpenChange={(open) => { if (!open) { setDeleteStep(0); setDeletingUser(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to permanently delete <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong> ({deletingUser?.email}). All their data including accounts, transactions, and notifications will be destroyed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setDeleteStep(2)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, I want to delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteStep === 2} onOpenChange={(open) => { if (!open) { setDeleteStep(0); setDeletingUser(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>🚨 Final Confirmation</AlertDialogTitle>
+            <AlertDialogDescription>
+              This is your LAST chance. Are you absolutely sure you want to permanently delete <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong>? This action is irreversible and will remove them from the entire system including authentication.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting..." : "DELETE PERMANENTLY"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
