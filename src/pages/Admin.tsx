@@ -420,19 +420,7 @@ const Admin = () => {
                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)}><Wallet className="h-3.5 w-3.5" /></Button>
                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)}><ReceiptText className="h-3.5 w-3.5" /></Button>
                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                        <AlertDialogDescription>This will permanently delete {p.first_name} {p.last_name}'s account from the system entirely. This cannot be undone.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteUser(p)}>Delete</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => startDeleteUser(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
                                 </div>
                               </td>
                             </tr>
