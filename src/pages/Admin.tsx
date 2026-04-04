@@ -53,6 +53,11 @@ const Admin = () => {
   const [transactionForm, setTransactionForm] = useState({ type: "credit", amount: "", description: "", status: "completed", recipient: "" });
   const [creatingTransaction, setCreatingTransaction] = useState(false);
 
+  // Delete confirmation (double confirm)
+  const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
+  const [deletingUser, setDeletingUser] = useState<ProfileRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // Settings
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [emailSettings, setEmailSettings] = useState({
