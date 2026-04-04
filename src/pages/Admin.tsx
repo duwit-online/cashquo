@@ -805,6 +805,41 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Double-confirm delete dialogs */}
+      <AlertDialog open={deleteStep === 1} onOpenChange={(open) => { if (!open) { setDeleteStep(0); setDeletingUser(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to permanently delete <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong> ({deletingUser?.email}). All their data including accounts, transactions, and notifications will be destroyed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setDeleteStep(2)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, I want to delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteStep === 2} onOpenChange={(open) => { if (!open) { setDeleteStep(0); setDeletingUser(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>🚨 Final Confirmation</AlertDialogTitle>
+            <AlertDialogDescription>
+              This is your LAST chance. Are you absolutely sure you want to permanently delete <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong>? This action is irreversible and will remove them from the entire system including authentication.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting..." : "DELETE PERMANENTLY"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
