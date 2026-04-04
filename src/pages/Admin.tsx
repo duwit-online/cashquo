@@ -155,13 +155,24 @@ const Admin = () => {
     else { toast.success("User updated"); setEditingUser(null); await fetchAll(); }
   };
 
-  const handleDeleteUser = async (p: ProfileRow) => {
+  const startDeleteUser = (p: ProfileRow) => {
+    setDeletingUser(p);
+    setDeleteStep(1);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    setDeleting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { user_id: p.user_id } });
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { user_id: deletingUser.user_id } });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       toast.success("User permanently deleted");
+      setDeletingUser(null);
+      setDeleteStep(0);
       await fetchAll();
     } catch (err: any) { toast.error(err.message || "Failed to delete user"); }
+    setDeleting(false);
   };
 
   const openEdit = (p: ProfileRow) => {
