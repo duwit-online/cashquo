@@ -40,6 +40,7 @@ const Admin = () => {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   const [editingUser, setEditingUser] = useState<ProfileRow | null>(null);
