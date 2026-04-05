@@ -170,7 +170,7 @@ const Auth = () => {
         body: { trigger_type: "login", recipient_email: email, variables: { account_name: email, email } },
       }).catch(() => {});
       clearSavedForm();
-      navigate("/");
+      navigate("/dashboard");
     }
     setLoading(false);
   };
