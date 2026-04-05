@@ -85,14 +85,16 @@ const Admin = () => {
 
   const fetchAll = async () => {
     setDataLoading(true);
-    const [pRes, aRes, tRes] = await Promise.all([
+    const [pRes, aRes, tRes, rRes] = await Promise.all([
       supabase.from("profiles").select("*"),
       supabase.from("accounts").select("*"),
       supabase.from("transactions").select("*").order("created_at", { ascending: false }).limit(20),
+      supabase.from("user_roles").select("*"),
     ]);
     if (pRes.data) setProfiles(pRes.data as unknown as ProfileRow[]);
     if (aRes.data) setAccounts(aRes.data);
     if (tRes.data) setTransactions(tRes.data);
+    if (rRes.data) setUserRoles(rRes.data as unknown as UserRole[]);
     setDataLoading(false);
   };
 
