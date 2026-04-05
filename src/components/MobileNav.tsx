@@ -1,5 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, ArrowLeftRight, CreditCard, User, Bell, DollarSign } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { LayoutDashboard, ArrowLeftRight, DollarSign, Bell, User, LogOut } from "lucide-react";
+import { useState } from "react";
 
 const tabs = [
   { icon: LayoutDashboard, label: "Home", path: "/" },
@@ -12,6 +14,8 @@ const tabs = [
 const MobileNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { signOut } = useAuth();
+  const [showLogout, setShowLogout] = useState(false);
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-area-bottom">
@@ -31,6 +35,22 @@ const MobileNav = () => {
             </button>
           );
         })}
+        <button
+          onClick={() => {
+            if (showLogout) {
+              signOut();
+            } else {
+              setShowLogout(true);
+              setTimeout(() => setShowLogout(false), 3000);
+            }
+          }}
+          className={`flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium transition-colors rounded-lg ${
+            showLogout ? "text-destructive" : "text-muted-foreground"
+          }`}
+        >
+          <LogOut className="h-5 w-5" />
+          {showLogout ? "Confirm" : "Logout"}
+        </button>
       </div>
     </nav>
   );

@@ -9,7 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import SendMoney from "./pages/SendMoney";
-import Cards from "./pages/Cards";
+
 import Notifications from "./pages/Notifications";
 import SettingsPage from "./pages/SettingsPage";
 import Admin from "./pages/Admin";
@@ -44,7 +44,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
             <Route path="/send" element={<ProtectedRoute><SendMoney /></ProtectedRoute>} />
-            <Route path="/cards" element={<ProtectedRoute><Cards /></ProtectedRoute>} />
+            
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />

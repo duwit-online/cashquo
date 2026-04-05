@@ -164,14 +164,19 @@ const Admin = () => {
     if (!deletingUser) return;
     setDeleting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { user_id: deletingUser.user_id } });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const response = await supabase.functions.invoke("admin-delete-user", { body: { user_id: deletingUser.user_id } });
+      console.log("Delete response:", response);
+      if (response.error) throw response.error;
+      const responseData = response.data;
+      if (responseData?.error) throw new Error(responseData.error);
       toast.success("User permanently deleted");
       setDeletingUser(null);
       setDeleteStep(0);
       await fetchAll();
-    } catch (err: any) { toast.error(err.message || "Failed to delete user"); }
+    } catch (err: any) {
+      console.error("Delete failed:", err);
+      toast.error(err.message || "Failed to delete user");
+    }
     setDeleting(false);
   };
 
