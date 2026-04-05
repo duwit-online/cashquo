@@ -3,7 +3,6 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard,
   ArrowLeftRight,
-  CreditCard,
   Settings,
   LogOut,
   Shield,
@@ -13,7 +12,6 @@ import {
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: ArrowLeftRight, label: "Transactions", path: "/transactions" },
-  { icon: CreditCard, label: "Cards", path: "/cards" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 

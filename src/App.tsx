@@ -9,7 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import SendMoney from "./pages/SendMoney";
-import Cards from "./pages/Cards";
+
 import Notifications from "./pages/Notifications";
 import SettingsPage from "./pages/SettingsPage";
 import Admin from "./pages/Admin";
