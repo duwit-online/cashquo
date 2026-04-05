@@ -15,7 +15,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings, Send, FileText, Clock } from "lucide-react";
+import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings, Send, FileText, Clock, ShieldCheck, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ROUTING_NUMBER } from "@/lib/constants";
@@ -27,6 +27,8 @@ interface ProfileRow {
 }
 interface AccountRow { id: string; user_id: string; balance: number; account_number: string; status: string; }
 interface TransactionRow { id: string; type: string; amount: number; description: string; status: string; created_at: string; user_id: string; }
+interface UserRole { id: string; user_id: string; role: string; }
+interface EmailTemplate { id: string; name: string; trigger_type: string; subject: string; html_body: string; is_active: boolean; created_at: string; updated_at: string; }
 interface EmailTemplate { id: string; name: string; trigger_type: string; subject: string; html_body: string; is_active: boolean; created_at: string; updated_at: string; }
 interface EmailLog { id: string; recipient_email: string; trigger_type: string; template_id: string | null; status: string; error_message: string | null; created_at: string; }
 
@@ -38,6 +40,7 @@ const Admin = () => {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   const [editingUser, setEditingUser] = useState<ProfileRow | null>(null);
@@ -82,14 +85,16 @@ const Admin = () => {
 
   const fetchAll = async () => {
     setDataLoading(true);
-    const [pRes, aRes, tRes] = await Promise.all([
+    const [pRes, aRes, tRes, rRes] = await Promise.all([
       supabase.from("profiles").select("*"),
       supabase.from("accounts").select("*"),
       supabase.from("transactions").select("*").order("created_at", { ascending: false }).limit(20),
+      supabase.from("user_roles").select("*"),
     ]);
     if (pRes.data) setProfiles(pRes.data as unknown as ProfileRow[]);
     if (aRes.data) setAccounts(aRes.data);
     if (tRes.data) setTransactions(tRes.data);
+    if (rRes.data) setUserRoles(rRes.data as unknown as UserRole[]);
     setDataLoading(false);
   };
 
@@ -178,6 +183,27 @@ const Admin = () => {
       toast.error(err.message || "Failed to delete user");
     }
     setDeleting(false);
+  };
+
+  const isUserAdmin = (userId: string) => userRoles.some((r) => r.user_id === userId && r.role === "admin");
+
+  const handleToggleAdmin = async (p: ProfileRow) => {
+    const isCurrentlyAdmin = isUserAdmin(p.user_id);
+    if (isCurrentlyAdmin) {
+      const { error } = await supabase.from("user_roles").delete().eq("user_id", p.user_id).eq("role", "admin");
+      if (error) { toast.error(error.message); return; }
+      // Re-add as regular user if no user role exists
+      const hasUserRole = userRoles.some((r) => r.user_id === p.user_id && r.role === "user");
+      if (!hasUserRole) {
+        await supabase.from("user_roles").insert({ user_id: p.user_id, role: "user" as any });
+      }
+      toast.success(`${p.first_name} removed as admin`);
+    } else {
+      const { error } = await supabase.from("user_roles").insert({ user_id: p.user_id, role: "admin" as any });
+      if (error) { toast.error(error.message); return; }
+      toast.success(`${p.first_name} is now an admin`);
+    }
+    await fetchAll();
   };
 
   const openEdit = (p: ProfileRow) => {
@@ -400,18 +426,20 @@ const Admin = () => {
               <CardContent>
                 {dataLoading ? <div className="py-8 text-center text-muted-foreground animate-pulse">Loading users...</div> : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-border text-left">
                         <th className="pb-3 font-medium text-muted-foreground">Name</th>
                         <th className="pb-3 font-medium text-muted-foreground">Email</th>
                         <th className="pb-3 font-medium text-muted-foreground">Account #</th>
                         <th className="pb-3 font-medium text-muted-foreground">Password</th>
                         <th className="pb-3 font-medium text-muted-foreground">Balance</th>
+                        <th className="pb-3 font-medium text-muted-foreground">Role</th>
                         <th className="pb-3 font-medium text-muted-foreground">Actions</th>
                       </tr></thead>
                       <tbody>
                         {profiles.map((p) => {
                           const ua = accounts.find((a) => a.user_id === p.user_id);
+                          const admin = isUserAdmin(p.user_id);
                           return (
                             <tr key={p.id} className="border-b border-border last:border-0">
                               <td className="py-3 font-medium">{p.first_name} {p.last_name}</td>
@@ -420,12 +448,20 @@ const Admin = () => {
                               <td className="py-3 font-mono text-xs">{p.plain_password || "—"}</td>
                               <td className="py-3 font-semibold">${Number(ua?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                               <td className="py-3">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${admin ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"}`}>
+                                  {admin ? "Admin" : "User"}
+                                </span>
+                              </td>
+                              <td className="py-3">
                                 <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingUser(p)}><Eye className="h-3.5 w-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)}><Wallet className="h-3.5 w-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)}><ReceiptText className="h-3.5 w-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => startDeleteUser(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingUser(p)} title="View"><Eye className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)} title="Balance"><Wallet className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)} title="Transaction"><ReceiptText className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Edit"><Pencil className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className={`h-7 w-7 ${admin ? "text-accent" : "text-muted-foreground"}`} onClick={() => handleToggleAdmin(p)} title={admin ? "Remove Admin" : "Make Admin"}>
+                                    {admin ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => startDeleteUser(p)} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
                                 </div>
                               </td>
                             </tr>

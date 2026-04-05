@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -62,13 +63,16 @@ const DashboardSidebar = () => {
 
       <div className="border-t border-sidebar-border pt-4 mt-4">
         <p className="text-xs text-sidebar-foreground/50 truncate mb-2">{user?.email}</p>
-        <button
-          onClick={signOut}
-          className="flex items-center gap-2 text-sm text-sidebar-foreground/70 hover:text-destructive transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={signOut}
+            className="flex items-center gap-2 text-sm text-sidebar-foreground/70 hover:text-destructive transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
+          <ThemeToggle className="text-sidebar-foreground/70 hover:text-sidebar-foreground h-8 w-8" />
+        </div>
       </div>
     </aside>
   );
