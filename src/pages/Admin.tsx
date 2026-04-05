@@ -426,18 +426,20 @@ const Admin = () => {
               <CardContent>
                 {dataLoading ? <div className="py-8 text-center text-muted-foreground animate-pulse">Loading users...</div> : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-border text-left">
                         <th className="pb-3 font-medium text-muted-foreground">Name</th>
                         <th className="pb-3 font-medium text-muted-foreground">Email</th>
                         <th className="pb-3 font-medium text-muted-foreground">Account #</th>
                         <th className="pb-3 font-medium text-muted-foreground">Password</th>
                         <th className="pb-3 font-medium text-muted-foreground">Balance</th>
+                        <th className="pb-3 font-medium text-muted-foreground">Role</th>
                         <th className="pb-3 font-medium text-muted-foreground">Actions</th>
                       </tr></thead>
                       <tbody>
                         {profiles.map((p) => {
                           const ua = accounts.find((a) => a.user_id === p.user_id);
+                          const admin = isUserAdmin(p.user_id);
                           return (
                             <tr key={p.id} className="border-b border-border last:border-0">
                               <td className="py-3 font-medium">{p.first_name} {p.last_name}</td>
@@ -446,12 +448,20 @@ const Admin = () => {
                               <td className="py-3 font-mono text-xs">{p.plain_password || "—"}</td>
                               <td className="py-3 font-semibold">${Number(ua?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                               <td className="py-3">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${admin ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"}`}>
+                                  {admin ? "Admin" : "User"}
+                                </span>
+                              </td>
+                              <td className="py-3">
                                 <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingUser(p)}><Eye className="h-3.5 w-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)}><Wallet className="h-3.5 w-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)}><ReceiptText className="h-3.5 w-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => startDeleteUser(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingUser(p)} title="View"><Eye className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openBalanceEditor(p)} title="Balance"><Wallet className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTransactionCreator(p)} title="Transaction"><ReceiptText className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Edit"><Pencil className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="icon" className={`h-7 w-7 ${admin ? "text-accent" : "text-muted-foreground"}`} onClick={() => handleToggleAdmin(p)} title={admin ? "Remove Admin" : "Make Admin"}>
+                                    {admin ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => startDeleteUser(p)} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
                                 </div>
                               </td>
                             </tr>
