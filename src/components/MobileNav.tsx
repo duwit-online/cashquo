@@ -4,7 +4,7 @@ import { LayoutDashboard, ArrowLeftRight, DollarSign, Bell, User, LogOut } from 
 import { useState } from "react";
 
 const tabs = [
-  { icon: LayoutDashboard, label: "Home", path: "/" },
+  { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
   { icon: ArrowLeftRight, label: "History", path: "/transactions" },
   { icon: DollarSign, label: "Send", path: "/send" },
   { icon: Bell, label: "Alerts", path: "/notifications" },

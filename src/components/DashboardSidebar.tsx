@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: ArrowLeftRight, label: "Transactions", path: "/transactions" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
