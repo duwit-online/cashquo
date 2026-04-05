@@ -15,7 +15,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings, Send, FileText, Clock } from "lucide-react";
+import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings, Send, FileText, Clock, ShieldCheck, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ROUTING_NUMBER } from "@/lib/constants";
