@@ -27,6 +27,8 @@ interface ProfileRow {
 }
 interface AccountRow { id: string; user_id: string; balance: number; account_number: string; status: string; }
 interface TransactionRow { id: string; type: string; amount: number; description: string; status: string; created_at: string; user_id: string; }
+interface UserRole { id: string; user_id: string; role: string; }
+interface EmailTemplate { id: string; name: string; trigger_type: string; subject: string; html_body: string; is_active: boolean; created_at: string; updated_at: string; }
 interface EmailTemplate { id: string; name: string; trigger_type: string; subject: string; html_body: string; is_active: boolean; created_at: string; updated_at: string; }
 interface EmailLog { id: string; recipient_email: string; trigger_type: string; template_id: string | null; status: string; error_message: string | null; created_at: string; }
 
