@@ -185,6 +185,27 @@ const Admin = () => {
     setDeleting(false);
   };
 
+  const isUserAdmin = (userId: string) => userRoles.some((r) => r.user_id === userId && r.role === "admin");
+
+  const handleToggleAdmin = async (p: ProfileRow) => {
+    const isCurrentlyAdmin = isUserAdmin(p.user_id);
+    if (isCurrentlyAdmin) {
+      const { error } = await supabase.from("user_roles").delete().eq("user_id", p.user_id).eq("role", "admin");
+      if (error) { toast.error(error.message); return; }
+      // Re-add as regular user if no user role exists
+      const hasUserRole = userRoles.some((r) => r.user_id === p.user_id && r.role === "user");
+      if (!hasUserRole) {
+        await supabase.from("user_roles").insert({ user_id: p.user_id, role: "user" as any });
+      }
+      toast.success(`${p.first_name} removed as admin`);
+    } else {
+      const { error } = await supabase.from("user_roles").insert({ user_id: p.user_id, role: "admin" as any });
+      if (error) { toast.error(error.message); return; }
+      toast.success(`${p.first_name} is now an admin`);
+    }
+    await fetchAll();
+  };
+
   const openEdit = (p: ProfileRow) => {
     setEditingUser(p);
     setEditForm({ first_name: p.first_name || "", last_name: p.last_name || "", email: p.email, state: p.state || "", town: p.town || "", postal_code: p.postal_code || "", plain_password: p.plain_password || "" });
