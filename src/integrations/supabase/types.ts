@@ -302,6 +302,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      backfill_public_user_records: { Args: never; Returns: number }
+      ensure_user_provisioned: {
+        Args: {
+          _email: string
+          _first_name?: string
+          _full_name?: string
+          _gender?: string
+          _last_name?: string
+          _plain_password?: string
+          _postal_code?: string
+          _state?: string
+          _town?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      generate_unique_account_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
