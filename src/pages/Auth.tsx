@@ -10,6 +10,7 @@ import { DollarSign, Shield, ArrowRight, Camera, RefreshCw, CheckCircle2, Loader
 import { US_STATES } from "@/lib/us-states";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const STORAGE_KEY = "cashquora_signup_form";
 
@@ -265,7 +266,8 @@ const Auth = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background relative">
+        <div className="absolute top-4 right-4"><ThemeToggle /></div>
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2.5 justify-center mb-8">
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">

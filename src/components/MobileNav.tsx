@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { LayoutDashboard, ArrowLeftRight, DollarSign, Bell, User, LogOut } from "lucide-react";
 import { useState } from "react";
 
@@ -35,6 +36,9 @@ const MobileNav = () => {
             </button>
           );
         })}
+        <div className="flex flex-col items-center gap-0.5 px-1">
+          <ThemeToggle className="h-8 w-8 text-muted-foreground" />
+        </div>
         <button
           onClick={() => {
             if (showLogout) {
