@@ -10,6 +10,7 @@ import { DollarSign, Shield, ArrowRight, Camera, RefreshCw, CheckCircle2, Loader
 import { US_STATES } from "@/lib/us-states";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const STORAGE_KEY = "cashquora_signup_form";
 
