@@ -266,7 +266,8 @@ const Auth = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background relative">
+        <div className="absolute top-4 right-4"><ThemeToggle /></div>
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2.5 justify-center mb-8">
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
