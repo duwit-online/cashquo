@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   DollarSign, Shield, ArrowRight, Zap, Globe, Lock, TrendingUp,
   Users, ChevronRight, Smartphone, CheckCircle2, Star, Send,
