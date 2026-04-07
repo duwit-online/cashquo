@@ -165,18 +165,48 @@ const Admin = () => {
     setDeleteStep(1);
   };
 
+  const resetDeleteState = () => {
+    if (deleting) return;
+    setDeletingUser(null);
+    setDeleteStep(0);
+  };
+
+  const getFunctionErrorMessage = async (error: unknown, data?: { error?: string } | null) => {
+    if (data?.error) return data.error;
+
+    const maybeError = error as { message?: string; context?: Response } | null;
+
+    if (maybeError?.context) {
+      try {
+        const json = await maybeError.context.clone().json();
+        if (json?.error) return json.error as string;
+      } catch {}
+
+      try {
+        const text = await maybeError.context.clone().text();
+        if (text) return text;
+      } catch {}
+    }
+
+    return maybeError?.message || "Request failed";
+  };
+
   const handleDeleteUser = async () => {
-    if (!deletingUser) return;
+    const targetUser = deletingUser;
+    if (!targetUser) return;
+
     setDeleting(true);
     try {
-      const response = await supabase.functions.invoke("admin-delete-user", { body: { user_id: deletingUser.user_id } });
-      console.log("Delete response:", response);
-      if (response.error) throw response.error;
-      const responseData = response.data;
-      if (responseData?.error) throw new Error(responseData.error);
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { user_id: targetUser.user_id },
+      });
+
+      if (error || data?.error) {
+        throw new Error(await getFunctionErrorMessage(error, data));
+      }
+
       toast.success("User permanently deleted");
-      setDeletingUser(null);
-      setDeleteStep(0);
+      resetDeleteState();
       await fetchAll();
     } catch (err: any) {
       console.error("Delete failed:", err);
@@ -299,8 +329,9 @@ const Admin = () => {
       // Save settings first
       await handleSaveSettings();
       const { data, error } = await supabase.functions.invoke("test-smtp", { body: { test_email: testEmail } });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error || data?.error) {
+        throw new Error(await getFunctionErrorMessage(error, data));
+      }
       toast.success("Test email sent successfully!");
     } catch (err: any) { toast.error(err.message || "Test failed"); }
     setTestingSmtp(false);
@@ -847,37 +878,40 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Double-confirm delete dialogs */}
-      <AlertDialog open={deleteStep === 1} onOpenChange={(open) => { if (!open) { setDeleteStep(0); setDeletingUser(null); } }}>
+      {/* Double-confirm delete dialog */}
+      <AlertDialog open={deleteStep > 0} onOpenChange={(open) => { if (!open) resetDeleteState(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>⚠️ Delete User</AlertDialogTitle>
+            <AlertDialogTitle>{deleteStep === 1 ? "⚠️ Delete User" : "🚨 Final Confirmation"}</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to permanently delete <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong> ({deletingUser?.email}). All their data including accounts, transactions, and notifications will be destroyed. This cannot be undone.
+              {deleteStep === 1 ? (
+                <>
+                  You are about to permanently delete <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong> ({deletingUser?.email}). All their data including accounts, transactions, and notifications will be destroyed. This cannot be undone.
+                </>
+              ) : (
+                <>
+                  This is your LAST chance. Are you absolutely sure you want to permanently delete <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong>? This action is irreversible and will remove them from the entire system including authentication.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setDeleteStep(2)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Yes, I want to delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={deleteStep === 2} onOpenChange={(open) => { if (!open) { setDeleteStep(0); setDeletingUser(null); } }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>🚨 Final Confirmation</AlertDialogTitle>
-            <AlertDialogDescription>
-              This is your LAST chance. Are you absolutely sure you want to permanently delete <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong>? This action is irreversible and will remove them from the entire system including authentication.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteUser} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {deleting ? "Deleting..." : "DELETE PERMANENTLY"}
-            </AlertDialogAction>
+            <AlertDialogCancel onClick={resetDeleteState}>Cancel</AlertDialogCancel>
+            {deleteStep === 1 ? (
+              <AlertDialogAction onClick={(event) => {
+                event.preventDefault();
+                setDeleteStep(2);
+              }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Yes, I want to delete
+              </AlertDialogAction>
+            ) : (
+              <AlertDialogAction onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteUser();
+              }} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                {deleting ? "Deleting..." : "DELETE PERMANENTLY"}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
