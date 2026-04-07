@@ -61,6 +61,7 @@ const Index = () => {
             <a href="#security" className="hover:text-foreground transition-colors">Security</a>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             {user ? (
               <Button onClick={() => navigate("/dashboard")} className="gap-2">
                 Dashboard <ArrowRight className="h-4 w-4" />

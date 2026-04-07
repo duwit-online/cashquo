@@ -36,6 +36,9 @@ const MobileNav = () => {
             </button>
           );
         })}
+        <div className="flex flex-col items-center gap-0.5 px-1">
+          <ThemeToggle className="h-8 w-8 text-muted-foreground" />
+        </div>
         <button
           onClick={() => {
             if (showLogout) {
