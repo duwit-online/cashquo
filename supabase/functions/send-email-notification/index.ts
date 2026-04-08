@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { loadEmailSettings, sendConfiguredEmail } from "../_shared/email-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,25 +26,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get email settings from app_settings
-    const { data: settings } = await adminClient
-      .from("app_settings")
-      .select("key, value")
-      .in("key", [
-        "email_provider",
-        "smtp_host",
-        "smtp_port",
-        "smtp_user",
-        "smtp_password",
-        "smtp_from_email",
-        "smtp_from_name",
-        "resend_api_key",
-      ]);
-
-    const config: Record<string, string> = {};
-    settings?.forEach((s: { key: string; value: string }) => {
-      config[s.key] = s.value;
-    });
+    const config = await loadEmailSettings(adminClient);
 
     const provider = config.email_provider || "none";
 
@@ -97,60 +80,7 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    let emailResult;
-
-    if (provider === "resend") {
-      const resendKey = config.resend_api_key;
-      if (!resendKey) {
-        return new Response(JSON.stringify({ error: "Resend API key not configured" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${resendKey}`,
-        },
-        body: JSON.stringify({
-          from: `${config.smtp_from_name || "CashQuora"} <${config.smtp_from_email || "noreply@cashquora.com"}>`,
-          to: [recipient_email],
-          subject,
-          html,
-        }),
-      });
-      emailResult = await res.json();
-
-    } else if (provider === "smtp") {
-      // For SMTP we use a simple fetch to a nodemailer-compatible approach
-      // Since Deno doesn't have native SMTP, we use the Deno smtp module
-      const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
-
-      const client = new SMTPClient({
-        connection: {
-          hostname: config.smtp_host,
-          port: Number(config.smtp_port) || 587,
-          tls: true,
-          auth: {
-            username: config.smtp_user,
-            password: config.smtp_password,
-          },
-        },
-      });
-
-      await client.send({
-        from: `${config.smtp_from_name || "CashQuora"} <${config.smtp_from_email}>`,
-        to: recipient_email,
-        subject,
-        content: "auto",
-        html,
-      });
-
-      await client.close();
-      emailResult = { success: true };
-    }
+    const emailResult = await sendConfiguredEmail(config, { to: recipient_email, subject, html });
 
     return new Response(JSON.stringify({ success: true, result: emailResult }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

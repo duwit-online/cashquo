@@ -66,6 +66,7 @@ const Admin = () => {
   const [emailSettings, setEmailSettings] = useState({
     email_provider: "none", smtp_host: "", smtp_port: "587", smtp_user: "", smtp_password: "",
     smtp_from_email: "", smtp_from_name: "CashQuora", resend_api_key: "", notification_sound_url: "",
+    topup_account_name: "", topup_bank_name: "", topup_account_type: "", topup_account_number: "", topup_routing_ach: "", topup_routing_wire: "",
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [soundFile, setSoundFile] = useState<File | null>(null);
@@ -317,7 +318,7 @@ const Admin = () => {
   const testSound = () => {
     if (emailSettings.notification_sound_url) {
       const audio = new Audio(emailSettings.notification_sound_url);
-      audio.volume = 0.5;
+      audio.volume = 1;
       audio.play().catch(() => toast.error("Cannot play sound"));
     }
   };
@@ -826,8 +827,27 @@ const Admin = () => {
                 </div>
               )}
               <div className="flex gap-2">
-                <Input type="file" accept="audio/*" onChange={(e) => setSoundFile(e.target.files?.[0] || null)} className="flex-1 text-xs" />
+                <Input type="file" accept=".mp3,.wav,.aac,.m4a,.ogg,.oga,audio/*" onChange={(e) => setSoundFile(e.target.files?.[0] || null)} className="flex-1 text-xs" />
                 <Button size="sm" onClick={handleUploadSound} disabled={!soundFile || uploadingSound}>{uploadingSound ? "Uploading..." : "Upload"}</Button>
+              </div>
+            </div>
+
+            <div className="space-y-3 border-t pt-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Wallet className="h-4 w-4" /> Top Up External Account</h3>
+              <p className="text-xs text-muted-foreground">
+                These details are shown to users when they tap Top Up so they know where to send real funding transfers.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Account Name</Label><Input value={emailSettings.topup_account_name} onChange={(e) => setEmailSettings({ ...emailSettings, topup_account_name: e.target.value })} placeholder="CashQuora Funding" /></div>
+                <div><Label className="text-xs">Bank Name</Label><Input value={emailSettings.topup_bank_name} onChange={(e) => setEmailSettings({ ...emailSettings, topup_bank_name: e.target.value })} placeholder="JPMorgan Chase" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Account Type</Label><Input value={emailSettings.topup_account_type} onChange={(e) => setEmailSettings({ ...emailSettings, topup_account_type: e.target.value })} placeholder="Business Checking" /></div>
+                <div><Label className="text-xs">Account Number</Label><Input value={emailSettings.topup_account_number} onChange={(e) => setEmailSettings({ ...emailSettings, topup_account_number: e.target.value })} placeholder="12345678901" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">ACH Routing</Label><Input value={emailSettings.topup_routing_ach} onChange={(e) => setEmailSettings({ ...emailSettings, topup_routing_ach: e.target.value })} placeholder="021000021" /></div>
+                <div><Label className="text-xs">Wire Routing</Label><Input value={emailSettings.topup_routing_wire} onChange={(e) => setEmailSettings({ ...emailSettings, topup_routing_wire: e.target.value })} placeholder="021000021" /></div>
               </div>
             </div>
 

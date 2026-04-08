@@ -15,6 +15,7 @@ import SendMoney from "./pages/SendMoney";
 import Notifications from "./pages/Notifications";
 import SettingsPage from "./pages/SettingsPage";
 import Admin from "./pages/Admin";
+import PayComingSoon from "./pages/PayComingSoon";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
               <Route path="/send" element={<ProtectedRoute><SendMoney /></ProtectedRoute>} />
+              <Route path="/pay" element={<ProtectedRoute><PayComingSoon /></ProtectedRoute>} />
               
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

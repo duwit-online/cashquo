@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { loadEmailSettings, sendConfiguredEmail } from "../_shared/email-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,17 +37,7 @@ Deno.serve(async (req) => {
     const { test_email } = await req.json();
     if (!test_email) throw new Error("test_email required");
 
-    // Get config
-    const { data: settings } = await adminClient
-      .from("app_settings")
-      .select("key, value")
-      .in("key", [
-        "email_provider", "smtp_host", "smtp_port", "smtp_user", "smtp_password",
-        "smtp_from_email", "smtp_from_name", "resend_api_key",
-      ]);
-
-    const config: Record<string, string> = {};
-    settings?.forEach((s: { key: string; value: string }) => { config[s.key] = s.value; });
+    const config = await loadEmailSettings(adminClient);
 
     const provider = config.email_provider || "none";
     if (provider === "none") throw new Error("No email provider configured");
@@ -54,40 +45,7 @@ Deno.serve(async (req) => {
     const subject = "CashQuora SMTP Test";
     const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px"><h2>SMTP Configuration Test</h2><p>This is a test email from CashQuora. If you received this, your email configuration is working correctly.</p><p style="color:#94a3b8;font-size:12px">Sent at ${new Date().toISOString()}</p></div>`;
 
-    if (provider === "resend") {
-      const resendKey = config.resend_api_key;
-      if (!resendKey) throw new Error("Resend API key not configured");
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
-        body: JSON.stringify({
-          from: `${config.smtp_from_name || "CashQuora"} <${config.smtp_from_email || "noreply@cashquora.com"}>`,
-          to: [test_email],
-          subject,
-          html,
-        }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(JSON.stringify(result));
-    } else if (provider === "smtp") {
-      const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
-      const client = new SMTPClient({
-        connection: {
-          hostname: config.smtp_host,
-          port: Number(config.smtp_port) || 587,
-          tls: true,
-          auth: { username: config.smtp_user, password: config.smtp_password },
-        },
-      });
-      await client.send({
-        from: `${config.smtp_from_name || "CashQuora"} <${config.smtp_from_email}>`,
-        to: test_email,
-        subject,
-        content: "auto",
-        html,
-      });
-      await client.close();
-    }
+    await sendConfiguredEmail(config, { to: test_email, subject, html });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

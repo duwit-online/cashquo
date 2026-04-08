@@ -11,6 +11,8 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { ROUTING_NUMBER } from "@/lib/constants";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import TopUpDetailsDialog from "@/components/TopUpDetailsDialog";
+import { fetchPublicAppConfig, type PublicAppConfig } from "@/lib/publicAppConfig";
 
 interface Account {
   id: string;
@@ -50,18 +52,22 @@ const Dashboard = () => {
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null; first_name: string; last_name: string } | null>(null);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [publicConfig, setPublicConfig] = useState<PublicAppConfig>({});
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [accRes, txRes, profileRes] = await Promise.all([
+      const [accRes, txRes, profileRes, configRes] = await Promise.all([
         supabase.from("accounts").select("*").eq("user_id", user.id),
         supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
         supabase.from("profiles").select("full_name, avatar_url, first_name, last_name").eq("user_id", user.id).single(),
+        fetchPublicAppConfig().catch(() => ({} as PublicAppConfig)),
       ]);
       if (accRes.data) setAccounts(accRes.data);
       if (txRes.data) setTransactions(txRes.data as Transaction[]);
       if (profileRes.data) setProfile(profileRes.data);
+      setPublicConfig(configRes);
     };
     fetchData();
   }, [user]);
@@ -146,8 +152,8 @@ const Dashboard = () => {
           {[
             { icon: Send, label: "Send", onClick: () => navigate("/send") },
             { icon: ArrowDownLeft, label: "Receive", onClick: () => copyToClipboard(mainAccount?.account_number || "", "Account number") },
-            { icon: Plus, label: "Top Up", onClick: () => {} },
-            { icon: ArrowUpRight, label: "Pay", onClick: () => {} },
+            { icon: Plus, label: "Top Up", onClick: () => setTopUpOpen(true) },
+            { icon: ArrowUpRight, label: "Pay", onClick: () => navigate("/pay") },
           ].map((action) => (
             <Card key={action.label} className="cursor-pointer hover:shadow-md transition-all hover:border-accent/30 group" onClick={action.onClick}>
               <CardContent className="flex flex-col items-center gap-2 p-4">
@@ -223,6 +229,13 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
+
+      <TopUpDetailsDialog
+        details={publicConfig}
+        onCopy={copyToClipboard}
+        onOpenChange={setTopUpOpen}
+        open={topUpOpen}
+      />
 
       {/* Transaction Detail Modal */}
       <Dialog open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>

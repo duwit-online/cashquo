@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { loadEmailSettings, sendConfiguredEmail } from "../_shared/email-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,17 +41,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get email config
-    const { data: settings } = await adminClient
-      .from("app_settings")
-      .select("key, value")
-      .in("key", [
-        "email_provider", "smtp_host", "smtp_port", "smtp_user", "smtp_password",
-        "smtp_from_email", "smtp_from_name", "resend_api_key",
-      ]);
-
-    const config: Record<string, string> = {};
-    settings?.forEach((s: { key: string; value: string }) => { config[s.key] = s.value; });
+    const config = await loadEmailSettings(adminClient);
 
     const provider = config.email_provider || "none";
     if (provider === "none") {
@@ -88,46 +79,8 @@ Deno.serve(async (req) => {
     let errorMessage = "";
 
     try {
-      if (provider === "resend") {
-        const resendKey = config.resend_api_key;
-        if (!resendKey) throw new Error("Resend API key not configured");
-
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${resendKey}`,
-          },
-          body: JSON.stringify({
-            from: `${config.smtp_from_name || "CashQuora"} <${config.smtp_from_email || "noreply@cashquora.com"}>`,
-            to: [recipient_email],
-            subject,
-            html,
-          }),
-        });
-        const result = await res.json();
-        if (!res.ok) throw new Error(JSON.stringify(result));
-        success = true;
-      } else if (provider === "smtp") {
-        const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
-        const client = new SMTPClient({
-          connection: {
-            hostname: config.smtp_host,
-            port: Number(config.smtp_port) || 587,
-            tls: true,
-            auth: { username: config.smtp_user, password: config.smtp_password },
-          },
-        });
-        await client.send({
-          from: `${config.smtp_from_name || "CashQuora"} <${config.smtp_from_email}>`,
-          to: recipient_email,
-          subject,
-          content: "auto",
-          html,
-        });
-        await client.close();
-        success = true;
-      }
+      await sendConfiguredEmail(config, { to: recipient_email, subject, html });
+      success = true;
     } catch (e: unknown) {
       errorMessage = e instanceof Error ? e.message : "Send failed";
     }
