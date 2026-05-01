@@ -65,8 +65,9 @@ const Admin = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [emailSettings, setEmailSettings] = useState({
     email_provider: "none", smtp_host: "", smtp_port: "587", smtp_user: "", smtp_password: "",
-    smtp_from_email: "", smtp_from_name: "CashQuora", resend_api_key: "", notification_sound_url: "",
+    smtp_from_email: "", smtp_from_name: "Fidelity CashQuora", resend_api_key: "", notification_sound_url: "",
     topup_account_name: "", topup_bank_name: "", topup_account_type: "", topup_account_number: "", topup_routing_ach: "", topup_routing_wire: "",
+    contact_phone: "", contact_address: "", contact_email: "", whatsapp_number: "", whatsapp_message: "", brand_name: "Fidelity CashQuora",
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [soundFile, setSoundFile] = useState<File | null>(null);
