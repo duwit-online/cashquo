@@ -755,6 +755,71 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Contact Messages Tab */}
+          <TabsContent value="messages">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg font-display">Contact Form Submissions</CardTitle>
+                <Button variant="outline" size="sm" onClick={fetchContactMessages}>Refresh</Button>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b border-border text-left">
+                      <th className="pb-3 font-medium text-muted-foreground">Name</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Email</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Subject</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Status</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Date</th>
+                      <th className="pb-3 font-medium text-muted-foreground text-right">Actions</th>
+                    </tr></thead>
+                    <tbody>
+                      {contactMessages.map((m) => (
+                        <tr key={m.id} className="border-b border-border last:border-0">
+                          <td className="py-3 font-medium">{m.name}</td>
+                          <td className="py-3 text-xs">{m.email}</td>
+                          <td className="py-3 text-xs truncate max-w-[200px]">{m.subject || "—"}</td>
+                          <td className="py-3"><span className={`px-2 py-0.5 rounded text-xs ${m.status === "new" ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>{m.status}</span></td>
+                          <td className="py-3 text-muted-foreground text-xs">{format(new Date(m.created_at), "MMM d, h:mm a")}</td>
+                          <td className="py-3 text-right">
+                            <Button size="sm" variant="ghost" onClick={() => { setViewingMessage(m); if (m.status === "new") markMessageRead(m.id); }}><Eye className="h-3.5 w-3.5" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => deleteMessage(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </td>
+                        </tr>
+                      ))}
+                      {contactMessages.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No messages yet</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Static Pages Tab */}
+          <TabsContent value="pages">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg font-display">Static Pages</CardTitle>
+                <Button variant="outline" size="sm" onClick={fetchPages}>Refresh</Button>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {pages.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30">
+                    <div>
+                      <p className="font-medium">{p.title}</p>
+                      <p className="text-xs text-muted-foreground">/pages/{p.slug} · updated {format(new Date(p.updated_at), "MMM d, yyyy")}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => window.open(p.slug === "contact" ? "/contact" : `/pages/${p.slug}`, "_blank")}><Eye className="h-3.5 w-3.5" /></Button>
+                      <Button size="sm" onClick={() => { setEditingPage(p); setPageForm({ title: p.title, content: p.content }); }}><Pencil className="h-3.5 w-3.5" /> Edit</Button>
+                    </div>
+                  </div>
+                ))}
+                {pages.length === 0 && <div className="py-8 text-center text-muted-foreground text-sm">No pages</div>}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
