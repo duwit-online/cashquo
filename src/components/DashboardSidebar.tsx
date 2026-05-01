@@ -25,7 +25,7 @@ const DashboardSidebar = () => {
     <aside className="hidden lg:flex flex-col w-64 bg-sidebar text-sidebar-foreground min-h-screen p-6">
       <div className="flex items-center gap-2 mb-10">
         <Landmark className="h-7 w-7 text-sidebar-primary" />
-        <span className="text-xl font-display font-bold text-sidebar-foreground">CashQuora</span>
+        <span className="text-xl font-display font-bold text-sidebar-foreground">Fidelity CashQuora</span>
       </div>
 
       <nav className="flex-1 space-y-1">

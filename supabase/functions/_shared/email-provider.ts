@@ -31,7 +31,7 @@ export const loadEmailSettings = async (adminClient: any): Promise<EmailSettings
 
 const getFromAddress = (config: EmailSettings) => {
   const fromEmail = config.smtp_from_email?.trim();
-  const fromName = config.smtp_from_name?.trim() || "CashQuora";
+  const fromName = config.smtp_from_name?.trim() || "Fidelity CashQuora";
 
   if (!fromEmail) {
     throw new Error("From email is not configured");

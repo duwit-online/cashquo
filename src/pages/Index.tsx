@@ -53,7 +53,7 @@ const Index = () => {
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
               <DollarSign className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-display font-bold tracking-tight">CashQuora</span>
+            <span className="text-xl font-display font-bold tracking-tight">Fidelity CashQuora</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
@@ -158,7 +158,7 @@ const Index = () => {
               <div className="relative">
                 <img
                   src={heroPhone}
-                  alt="CashQuora banking app dashboard"
+                  alt="Fidelity CashQuora banking app dashboard"
                   width={420}
                   height={540}
                   className="relative z-10 drop-shadow-2xl"
@@ -246,7 +246,7 @@ const Index = () => {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {[
-              { icon: Zap, title: "Instant Transfers", desc: "Send money to any CashQuora user in seconds — no waiting, no holds, no limits.", color: "bg-accent/10 text-accent" },
+              { icon: Zap, title: "Instant Transfers", desc: "Send money to any Fidelity CashQuora user in seconds — no waiting, no holds, no limits.", color: "bg-accent/10 text-accent" },
               { icon: Lock, title: "Bank-Grade Security", desc: "256-bit encryption, AI-powered fraud detection, and FDIC insurance on every dollar.", color: "bg-primary/10 text-primary" },
               { icon: Globe, title: "Access Anywhere", desc: "Manage your money from any device, any time. Your bank is always in your pocket.", color: "bg-success/10 text-success" },
               { icon: TrendingUp, title: "Real-Time Tracking", desc: "Every transaction, balance update, and alert — live and in real time.", color: "bg-warning/10 text-warning" },
@@ -297,7 +297,7 @@ const Index = () => {
               },
               {
                 step: "03", icon: Send, title: "Send & Receive Money",
-                desc: "Transfer funds to anyone with a CashQuora account instantly using their account number.",
+                desc: "Transfer funds to anyone with a Fidelity CashQuora account instantly using their account number.",
               },
             ].map((item, i) => (
               <motion.div
@@ -331,7 +331,7 @@ const Index = () => {
               <div className="relative">
                 <img
                   src={heroPeople}
-                  alt="Happy CashQuora users"
+                  alt="Happy Fidelity CashQuora users"
                   loading="lazy"
                   width={1024}
                   height={768}
@@ -351,7 +351,7 @@ const Index = () => {
                 <span className="text-primary">your lifestyle.</span>
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                Whether you're splitting dinner, paying rent, or sending money to family — CashQuora makes it effortless. Real people, real transactions, real-time.
+                Whether you're splitting dinner, paying rent, or sending money to family — Fidelity CashQuora makes it effortless. Real people, real transactions, real-time.
               </p>
               <div className="space-y-4">
                 {[
@@ -385,7 +385,7 @@ const Index = () => {
                 <span className="text-primary">always protected.</span>
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                We use the same security infrastructure trusted by the world's largest financial institutions. Every layer of CashQuora is designed to keep your money safe.
+                We use the same security infrastructure trusted by the world's largest financial institutions. Every layer of Fidelity CashQuora is designed to keep your money safe.
               </p>
               <div className="grid grid-cols-2 gap-4">
                 {[
@@ -409,7 +409,7 @@ const Index = () => {
               <div className="relative">
                 <img
                   src={cardMockup}
-                  alt="CashQuora secure banking card"
+                  alt="Fidelity CashQuora secure banking card"
                   loading="lazy"
                   width={400}
                   height={256}
@@ -443,9 +443,9 @@ const Index = () => {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { name: "Sarah Mitchell", role: "Small Business Owner", text: "CashQuora changed how I handle payments. Transfers are instant and the app is incredibly intuitive. I've never felt this confident about digital banking.", rating: 5 },
+              { name: "Sarah Mitchell", role: "Small Business Owner", text: "Fidelity CashQuora changed how I handle payments. Transfers are instant and the app is incredibly intuitive. I've never felt this confident about digital banking.", rating: 5 },
               { name: "James Rodriguez", role: "Freelance Designer", text: "The KYC process took less than a minute. I was verified and sending money within 5 minutes of downloading. That's unheard of.", rating: 5 },
-              { name: "Emily Chen", role: "Graduate Student", text: "I split rent with 3 roommates every month. CashQuora makes it seamless — no more Venmo drama. And zero fees? That's a game changer.", rating: 5 },
+              { name: "Emily Chen", role: "Graduate Student", text: "I split rent with 3 roommates every month. Fidelity CashQuora makes it seamless — no more Venmo drama. And zero fees? That's a game changer.", rating: 5 },
             ].map((review, i) => (
               <motion.div
                 key={review.name}
@@ -495,7 +495,7 @@ const Index = () => {
           >
             <img
               src={heroPhone}
-              alt="CashQuora mobile app"
+              alt="Fidelity CashQuora mobile app"
               loading="lazy"
               width={320}
               height={410}
@@ -540,7 +540,7 @@ const Index = () => {
               Ready to bank smarter?
             </h2>
             <p className="text-primary-foreground/70 mb-10 max-w-lg mx-auto text-sm sm:text-base">
-              Join hundreds of thousands who trust CashQuora for fast, secure, and fee-free banking. Open your account in under 5 minutes.
+              Join hundreds of thousands who trust Fidelity CashQuora for fast, secure, and fee-free banking. Open your account in under 5 minutes.
             </p>
             <Button
               size="lg"
@@ -563,7 +563,7 @@ const Index = () => {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <DollarSign className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <span className="font-display font-bold">CashQuora</span>
+                <span className="font-display font-bold">Fidelity CashQuora</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Modern digital banking for the modern world. FDIC insured.
@@ -596,7 +596,7 @@ const Index = () => {
           </div>
           <div className="border-t border-border/40 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} CashQuora, Inc. All rights reserved. FDIC Insured. Equal Housing Lender.
+              © {new Date().getFullYear()} Fidelity CashQuora, Inc. All rights reserved. FDIC Insured. Equal Housing Lender.
             </p>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> FDIC</span>

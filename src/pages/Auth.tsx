@@ -251,7 +251,7 @@ const Auth = () => {
             <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center">
               <DollarSign className="h-6 w-6 text-accent-foreground" />
             </div>
-            <span className="text-2xl font-display font-bold text-primary-foreground">CashQuora</span>
+            <span className="text-2xl font-display font-bold text-primary-foreground">Fidelity CashQuora</span>
           </div>
           <h1 className="text-4xl lg:text-5xl font-display font-bold text-primary-foreground leading-tight mb-6">
             Banking made<br />simple & secure.
@@ -273,7 +273,7 @@ const Auth = () => {
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
               <DollarSign className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-display font-bold">CashQuora</span>
+            <span className="text-xl font-display font-bold">Fidelity CashQuora</span>
           </div>
 
           {step === "form" && (
@@ -283,7 +283,7 @@ const Auth = () => {
                   {isLogin ? "Welcome back" : "Open your account"}
                 </h2>
                 <p className="text-muted-foreground text-sm mt-1.5">
-                  {isLogin ? "Sign in to manage your accounts" : "Get started with CashQuora in minutes"}
+                  {isLogin ? "Sign in to manage your accounts" : "Get started with Fidelity CashQuora in minutes"}
                 </p>
               </div>
 
