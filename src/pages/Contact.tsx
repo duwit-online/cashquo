@@ -53,11 +53,24 @@ const Contact = () => {
       subject: parsed.data.subject || "",
       message: parsed.data.message,
     });
-    setSubmitting(false);
     if (error) {
+      setSubmitting(false);
       toast.error(error.message);
       return;
     }
+    // Fire-and-forget: notify admins via configured email
+    supabase.functions
+      .invoke("notify-admin-message", {
+        body: {
+          name: parsed.data.name,
+          email: parsed.data.email,
+          phone: parsed.data.phone,
+          subject: parsed.data.subject,
+          message: parsed.data.message,
+        },
+      })
+      .catch(() => {});
+    setSubmitting(false);
     toast.success("Message sent. Our team will be in touch.");
     setForm({ name: "", email: "", phone: "", subject: "", message: "" });
   };
