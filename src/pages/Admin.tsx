@@ -1069,6 +1069,50 @@ const Admin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Contact Message Dialog */}
+      <Dialog open={!!viewingMessage} onOpenChange={(open) => !open && setViewingMessage(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Contact Message</DialogTitle></DialogHeader>
+          {viewingMessage && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">From</Label><p className="font-medium">{viewingMessage.name}</p></div>
+                <div><Label className="text-xs">Email</Label><p className="font-medium">{viewingMessage.email}</p></div>
+                {viewingMessage.phone && <div><Label className="text-xs">Phone</Label><p>{viewingMessage.phone}</p></div>}
+                <div><Label className="text-xs">Date</Label><p>{format(new Date(viewingMessage.created_at), "MMM d, yyyy h:mm a")}</p></div>
+              </div>
+              {viewingMessage.subject && <div><Label className="text-xs">Subject</Label><p className="font-medium">{viewingMessage.subject}</p></div>}
+              <div><Label className="text-xs">Message</Label><div className="rounded-lg border border-border bg-muted/30 p-3 whitespace-pre-wrap">{viewingMessage.message}</div></div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => window.open(`mailto:${viewingMessage.email}?subject=${encodeURIComponent("Re: " + (viewingMessage.subject || "Your message"))}`)}>Reply via email</Button>
+                <Button variant="destructive" onClick={() => { deleteMessage(viewingMessage.id); setViewingMessage(null); }}>Delete</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Static Page Dialog */}
+      <Dialog open={!!editingPage} onOpenChange={(open) => !open && setEditingPage(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Edit Page · /{editingPage?.slug}</DialogTitle></DialogHeader>
+          {editingPage && (
+            <div className="space-y-3">
+              <div><Label className="text-xs">Title</Label><Input value={pageForm.title} onChange={(e) => setPageForm({ ...pageForm, title: e.target.value })} /></div>
+              <div>
+                <Label className="text-xs">Content (HTML)</Label>
+                <Textarea rows={18} value={pageForm.content} onChange={(e) => setPageForm({ ...pageForm, content: e.target.value })} className="font-mono text-xs" />
+                <p className="text-[11px] text-muted-foreground mt-1">You can use HTML tags like &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;a&gt;, &lt;strong&gt;.</p>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <Button onClick={savePage} disabled={savingPage}>{savingPage ? "Saving..." : "Save Page"}</Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
