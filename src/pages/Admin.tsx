@@ -489,9 +489,11 @@ const Admin = () => {
 
         {/* Main Tabs */}
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="users" className="gap-1"><Users className="h-3.5 w-3.5" /> Users</TabsTrigger>
             <TabsTrigger value="transactions" className="gap-1"><Activity className="h-3.5 w-3.5" /> Transactions</TabsTrigger>
+            <TabsTrigger value="messages" className="gap-1"><Mail className="h-3.5 w-3.5" /> Messages{contactMessages.filter(m => m.status === "new").length > 0 && (<span className="ml-1 px-1.5 rounded bg-destructive text-destructive-foreground text-[10px]">{contactMessages.filter(m => m.status === "new").length}</span>)}</TabsTrigger>
+            <TabsTrigger value="pages" className="gap-1"><FileText className="h-3.5 w-3.5" /> Pages</TabsTrigger>
             <TabsTrigger value="templates" className="gap-1"><FileText className="h-3.5 w-3.5" /> Email Templates</TabsTrigger>
             <TabsTrigger value="logs" className="gap-1"><Clock className="h-3.5 w-3.5" /> Email Logs</TabsTrigger>
           </TabsList>
