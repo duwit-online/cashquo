@@ -963,7 +963,29 @@ const Admin = () => {
               </div>
             </div>
 
-            {/* Email Config */}
+            {/* Branding */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Landmark className="h-4 w-4" /> Branding</h3>
+              <div><Label className="text-xs">Brand Name</Label><Input value={emailSettings.brand_name} onChange={(e) => setEmailSettings({ ...emailSettings, brand_name: e.target.value })} placeholder="Fidelity CashQuora" /></div>
+            </div>
+
+            {/* Contact Info */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Phone className="h-4 w-4" /> Contact Information (shown on Contact page)</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Phone</Label><Input value={emailSettings.contact_phone} onChange={(e) => setEmailSettings({ ...emailSettings, contact_phone: e.target.value })} placeholder="+1 (628) 262-7372" /></div>
+                <div><Label className="text-xs">Public Email</Label><Input value={emailSettings.contact_email} onChange={(e) => setEmailSettings({ ...emailSettings, contact_email: e.target.value })} placeholder="support@..." /></div>
+              </div>
+              <div><Label className="text-xs">Address</Label><Input value={emailSettings.contact_address} onChange={(e) => setEmailSettings({ ...emailSettings, contact_address: e.target.value })} placeholder="345 California St, Ste. 1600..." /></div>
+            </div>
+
+            {/* WhatsApp */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><MessageSquare className="h-4 w-4" /> WhatsApp Contact</h3>
+              <div><Label className="text-xs">WhatsApp Number (with country code, e.g. +16282627372)</Label><Input value={emailSettings.whatsapp_number} onChange={(e) => setEmailSettings({ ...emailSettings, whatsapp_number: e.target.value })} placeholder="+16282627372" /></div>
+              <div><Label className="text-xs">Default Message</Label><Input value={emailSettings.whatsapp_message} onChange={(e) => setEmailSettings({ ...emailSettings, whatsapp_message: e.target.value })} placeholder="Hello, I need assistance" /></div>
+              <p className="text-[11px] text-muted-foreground">Leave the number empty to hide the WhatsApp button site-wide.</p>
+            </div>
             <div className="space-y-3">
               <h3 className="text-sm font-semibold flex items-center gap-2"><Mail className="h-4 w-4" /> Email Configuration</h3>
               <div>
