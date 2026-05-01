@@ -167,6 +167,8 @@ const Admin = () => {
     fetchSettings();
     fetchTemplates();
     fetchLogs();
+    fetchContactMessages();
+    fetchPages();
   }, [isAdmin, authLoading]);
 
   if (authLoading) {
