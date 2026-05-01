@@ -70,7 +70,6 @@ Deno.serve(async (req) => {
           to,
           subject: `[Contact] ${subject || "New message from " + name}`,
           html,
-          replyTo: email,
         });
         sent++;
       } catch (e) {
