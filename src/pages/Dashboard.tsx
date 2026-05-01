@@ -13,6 +13,8 @@ import { ROUTING_NUMBER } from "@/lib/constants";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import TopUpDetailsDialog from "@/components/TopUpDetailsDialog";
 import { fetchPublicAppConfig, type PublicAppConfig } from "@/lib/publicAppConfig";
+import MarketTicker from "@/components/MarketTicker";
+import WhatsAppFab from "@/components/WhatsAppFab";
 
 interface Account {
   id: string;
@@ -87,6 +89,9 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
+        <div className="-mx-4 lg:-mx-6">
+          <MarketTicker variant="dark" />
+        </div>
         {/* Greeting with Avatar */}
         <div className="flex items-center gap-4">
           <Avatar className="h-12 w-12 border-2 border-accent/20">
@@ -275,6 +280,7 @@ const Dashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+      <WhatsAppFab />
     </DashboardLayout>
   );
 };

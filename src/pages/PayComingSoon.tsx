@@ -27,7 +27,7 @@ const steps = [
   {
     icon: CalendarClock,
     title: "Set",
-    description: "Choose limits, due dates, and bill categories you want CashQuora to handle automatically.",
+    description: "Choose limits, due dates, and bill categories you want Fidelity CashQuora to handle automatically.",
   },
   {
     icon: Repeat2,
@@ -104,7 +104,7 @@ const PayComingSoon = () => {
 
               <div className="space-y-4">
                 <h1 className="max-w-3xl text-4xl font-display font-bold leading-tight tracking-tight text-foreground lg:text-6xl">
-                  Total financial automation is coming to CashQuora.
+                  Total financial automation is coming to Fidelity CashQuora.
                 </h1>
                 <p className="max-w-2xl text-base leading-7 text-muted-foreground lg:text-lg">
                   Soon you’ll be able to automate bills, recurring subscriptions, and everyday obligations from one premium dashboard — with better visibility, smarter timing, and a calmer monthly routine.
@@ -282,9 +282,9 @@ const PayComingSoon = () => {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground/65">Launch message</p>
               <h2 className="text-3xl font-display font-bold">One dashboard. Every recurring payment.</h2>
               <p className="text-sm leading-7 text-primary-foreground/75">
-                CashQuora Bill Pay will bring your subscriptions, utilities, phone bills, and recurring essentials into one beautifully automated workflow.
+                Fidelity CashQuora Bill Pay will bring your subscriptions, utilities, phone bills, and recurring essentials into one beautifully automated workflow.
               </p>
-              <Button variant="secondary" className="w-full" onClick={() => navigate("/dashboard")}>Continue using CashQuora today</Button>
+              <Button variant="secondary" className="w-full" onClick={() => navigate("/dashboard")}>Continue using Fidelity CashQuora today</Button>
             </CardContent>
           </Card>
         </section>

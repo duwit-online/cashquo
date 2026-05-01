@@ -15,7 +15,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings, Send, FileText, Clock, ShieldCheck, ShieldOff } from "lucide-react";
+import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings, Send, FileText, Clock, ShieldCheck, ShieldOff, Landmark, Phone, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ROUTING_NUMBER } from "@/lib/constants";
@@ -65,8 +65,9 @@ const Admin = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [emailSettings, setEmailSettings] = useState({
     email_provider: "none", smtp_host: "", smtp_port: "587", smtp_user: "", smtp_password: "",
-    smtp_from_email: "", smtp_from_name: "CashQuora", resend_api_key: "", notification_sound_url: "",
+    smtp_from_email: "", smtp_from_name: "Fidelity CashQuora", resend_api_key: "", notification_sound_url: "",
     topup_account_name: "", topup_bank_name: "", topup_account_type: "", topup_account_number: "", topup_routing_ach: "", topup_routing_wire: "",
+    contact_phone: "", contact_address: "", contact_email: "", whatsapp_number: "", whatsapp_message: "", brand_name: "Fidelity CashQuora",
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [soundFile, setSoundFile] = useState<File | null>(null);
@@ -83,6 +84,48 @@ const Admin = () => {
 
   // Email logs
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
+
+  // Contact messages
+  const [contactMessages, setContactMessages] = useState<Array<{ id: string; name: string; email: string; phone: string; subject: string; message: string; status: string; created_at: string }>>([]);
+  const [viewingMessage, setViewingMessage] = useState<typeof contactMessages[number] | null>(null);
+
+  // Static pages
+  const [pages, setPages] = useState<Array<{ id: string; slug: string; title: string; content: string; updated_at: string }>>([]);
+  const [editingPage, setEditingPage] = useState<typeof pages[number] | null>(null);
+  const [pageForm, setPageForm] = useState({ title: "", content: "" });
+  const [savingPage, setSavingPage] = useState(false);
+
+  const fetchContactMessages = async () => {
+    const { data } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
+    if (data) setContactMessages(data as any);
+  };
+  const fetchPages = async () => {
+    const { data } = await supabase.from("static_pages").select("*").order("slug");
+    if (data) setPages(data as any);
+  };
+  const deleteMessage = async (id: string) => {
+    const { error } = await supabase.from("contact_messages").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Message deleted");
+    fetchContactMessages();
+  };
+  const markMessageRead = async (id: string) => {
+    await supabase.from("contact_messages").update({ status: "read" }).eq("id", id);
+    fetchContactMessages();
+  };
+  const savePage = async () => {
+    if (!editingPage) return;
+    setSavingPage(true);
+    const { error } = await supabase.from("static_pages").update({
+      title: pageForm.title,
+      content: pageForm.content,
+    }).eq("id", editingPage.id);
+    setSavingPage(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Page saved");
+    setEditingPage(null);
+    fetchPages();
+  };
 
   const fetchAll = async () => {
     setDataLoading(true);
@@ -124,6 +167,8 @@ const Admin = () => {
     fetchSettings();
     fetchTemplates();
     fetchLogs();
+    fetchContactMessages();
+    fetchPages();
   }, [isAdmin, authLoading]);
 
   if (authLoading) {
@@ -444,9 +489,11 @@ const Admin = () => {
 
         {/* Main Tabs */}
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="users" className="gap-1"><Users className="h-3.5 w-3.5" /> Users</TabsTrigger>
             <TabsTrigger value="transactions" className="gap-1"><Activity className="h-3.5 w-3.5" /> Transactions</TabsTrigger>
+            <TabsTrigger value="messages" className="gap-1"><Mail className="h-3.5 w-3.5" /> Messages{contactMessages.filter(m => m.status === "new").length > 0 && (<span className="ml-1 px-1.5 rounded bg-destructive text-destructive-foreground text-[10px]">{contactMessages.filter(m => m.status === "new").length}</span>)}</TabsTrigger>
+            <TabsTrigger value="pages" className="gap-1"><FileText className="h-3.5 w-3.5" /> Pages</TabsTrigger>
             <TabsTrigger value="templates" className="gap-1"><FileText className="h-3.5 w-3.5" /> Email Templates</TabsTrigger>
             <TabsTrigger value="logs" className="gap-1"><Clock className="h-3.5 w-3.5" /> Email Logs</TabsTrigger>
           </TabsList>
@@ -708,6 +755,71 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Contact Messages Tab */}
+          <TabsContent value="messages">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg font-display">Contact Form Submissions</CardTitle>
+                <Button variant="outline" size="sm" onClick={fetchContactMessages}>Refresh</Button>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b border-border text-left">
+                      <th className="pb-3 font-medium text-muted-foreground">Name</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Email</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Subject</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Status</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Date</th>
+                      <th className="pb-3 font-medium text-muted-foreground text-right">Actions</th>
+                    </tr></thead>
+                    <tbody>
+                      {contactMessages.map((m) => (
+                        <tr key={m.id} className="border-b border-border last:border-0">
+                          <td className="py-3 font-medium">{m.name}</td>
+                          <td className="py-3 text-xs">{m.email}</td>
+                          <td className="py-3 text-xs truncate max-w-[200px]">{m.subject || "—"}</td>
+                          <td className="py-3"><span className={`px-2 py-0.5 rounded text-xs ${m.status === "new" ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>{m.status}</span></td>
+                          <td className="py-3 text-muted-foreground text-xs">{format(new Date(m.created_at), "MMM d, h:mm a")}</td>
+                          <td className="py-3 text-right">
+                            <Button size="sm" variant="ghost" onClick={() => { setViewingMessage(m); if (m.status === "new") markMessageRead(m.id); }}><Eye className="h-3.5 w-3.5" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => deleteMessage(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </td>
+                        </tr>
+                      ))}
+                      {contactMessages.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No messages yet</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Static Pages Tab */}
+          <TabsContent value="pages">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg font-display">Static Pages</CardTitle>
+                <Button variant="outline" size="sm" onClick={fetchPages}>Refresh</Button>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {pages.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30">
+                    <div>
+                      <p className="font-medium">{p.title}</p>
+                      <p className="text-xs text-muted-foreground">/pages/{p.slug} · updated {format(new Date(p.updated_at), "MMM d, yyyy")}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => window.open(p.slug === "contact" ? "/contact" : `/pages/${p.slug}`, "_blank")}><Eye className="h-3.5 w-3.5" /></Button>
+                      <Button size="sm" onClick={() => { setEditingPage(p); setPageForm({ title: p.title, content: p.content }); }}><Pencil className="h-3.5 w-3.5" /> Edit</Button>
+                    </div>
+                  </div>
+                ))}
+                {pages.length === 0 && <div className="py-8 text-center text-muted-foreground text-sm">No pages</div>}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -851,7 +963,29 @@ const Admin = () => {
               </div>
             </div>
 
-            {/* Email Config */}
+            {/* Branding */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Landmark className="h-4 w-4" /> Branding</h3>
+              <div><Label className="text-xs">Brand Name</Label><Input value={emailSettings.brand_name} onChange={(e) => setEmailSettings({ ...emailSettings, brand_name: e.target.value })} placeholder="Fidelity CashQuora" /></div>
+            </div>
+
+            {/* Contact Info */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Phone className="h-4 w-4" /> Contact Information (shown on Contact page)</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Phone</Label><Input value={emailSettings.contact_phone} onChange={(e) => setEmailSettings({ ...emailSettings, contact_phone: e.target.value })} placeholder="+1 (628) 262-7372" /></div>
+                <div><Label className="text-xs">Public Email</Label><Input value={emailSettings.contact_email} onChange={(e) => setEmailSettings({ ...emailSettings, contact_email: e.target.value })} placeholder="support@..." /></div>
+              </div>
+              <div><Label className="text-xs">Address</Label><Input value={emailSettings.contact_address} onChange={(e) => setEmailSettings({ ...emailSettings, contact_address: e.target.value })} placeholder="345 California St, Ste. 1600..." /></div>
+            </div>
+
+            {/* WhatsApp */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><MessageSquare className="h-4 w-4" /> WhatsApp Contact</h3>
+              <div><Label className="text-xs">WhatsApp Number (with country code, e.g. +16282627372)</Label><Input value={emailSettings.whatsapp_number} onChange={(e) => setEmailSettings({ ...emailSettings, whatsapp_number: e.target.value })} placeholder="+16282627372" /></div>
+              <div><Label className="text-xs">Default Message</Label><Input value={emailSettings.whatsapp_message} onChange={(e) => setEmailSettings({ ...emailSettings, whatsapp_message: e.target.value })} placeholder="Hello, I need assistance" /></div>
+              <p className="text-[11px] text-muted-foreground">Leave the number empty to hide the WhatsApp button site-wide.</p>
+            </div>
             <div className="space-y-3">
               <h3 className="text-sm font-semibold flex items-center gap-2"><Mail className="h-4 w-4" /> Email Configuration</h3>
               <div>
@@ -935,6 +1069,50 @@ const Admin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Contact Message Dialog */}
+      <Dialog open={!!viewingMessage} onOpenChange={(open) => !open && setViewingMessage(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Contact Message</DialogTitle></DialogHeader>
+          {viewingMessage && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">From</Label><p className="font-medium">{viewingMessage.name}</p></div>
+                <div><Label className="text-xs">Email</Label><p className="font-medium">{viewingMessage.email}</p></div>
+                {viewingMessage.phone && <div><Label className="text-xs">Phone</Label><p>{viewingMessage.phone}</p></div>}
+                <div><Label className="text-xs">Date</Label><p>{format(new Date(viewingMessage.created_at), "MMM d, yyyy h:mm a")}</p></div>
+              </div>
+              {viewingMessage.subject && <div><Label className="text-xs">Subject</Label><p className="font-medium">{viewingMessage.subject}</p></div>}
+              <div><Label className="text-xs">Message</Label><div className="rounded-lg border border-border bg-muted/30 p-3 whitespace-pre-wrap">{viewingMessage.message}</div></div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => window.open(`mailto:${viewingMessage.email}?subject=${encodeURIComponent("Re: " + (viewingMessage.subject || "Your message"))}`)}>Reply via email</Button>
+                <Button variant="destructive" onClick={() => { deleteMessage(viewingMessage.id); setViewingMessage(null); }}>Delete</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Static Page Dialog */}
+      <Dialog open={!!editingPage} onOpenChange={(open) => !open && setEditingPage(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Edit Page · /{editingPage?.slug}</DialogTitle></DialogHeader>
+          {editingPage && (
+            <div className="space-y-3">
+              <div><Label className="text-xs">Title</Label><Input value={pageForm.title} onChange={(e) => setPageForm({ ...pageForm, title: e.target.value })} /></div>
+              <div>
+                <Label className="text-xs">Content (HTML)</Label>
+                <Textarea rows={18} value={pageForm.content} onChange={(e) => setPageForm({ ...pageForm, content: e.target.value })} className="font-mono text-xs" />
+                <p className="text-[11px] text-muted-foreground mt-1">You can use HTML tags like &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;a&gt;, &lt;strong&gt;.</p>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <Button onClick={savePage} disabled={savingPage}>{savingPage ? "Saving..." : "Save Page"}</Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

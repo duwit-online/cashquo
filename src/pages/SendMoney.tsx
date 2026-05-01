@@ -205,7 +205,7 @@ const SendMoney = () => {
       <div className="max-w-lg mx-auto space-y-6 animate-fade-in">
         <div>
           <h1 className="text-2xl font-display font-bold">Send Money</h1>
-          <p className="text-sm text-muted-foreground mt-1">Transfer funds to another CashQuora account</p>
+          <p className="text-sm text-muted-foreground mt-1">Transfer funds to another Fidelity CashQuora account</p>
         </div>
 
         {senderAccount && (
@@ -240,7 +240,7 @@ const SendMoney = () => {
                 <p className="text-xs text-destructive">Invalid routing number</p>
               )}
               {routingNumber === ROUTING_NUMBER && (
-                <p className="text-xs text-success">✓ CashQuora routing number verified</p>
+                <p className="text-xs text-success">✓ Fidelity CashQuora routing number verified</p>
               )}
             </div>
 

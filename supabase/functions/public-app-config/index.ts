@@ -13,6 +13,12 @@ const ALLOWED_KEYS = [
   "topup_account_number",
   "topup_routing_ach",
   "topup_routing_wire",
+  "contact_phone",
+  "contact_address",
+  "contact_email",
+  "whatsapp_number",
+  "whatsapp_message",
+  "brand_name",
 ];
 
 Deno.serve(async (req) => {

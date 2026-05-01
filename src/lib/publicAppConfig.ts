@@ -8,6 +8,12 @@ export interface PublicAppConfig {
   topup_account_number?: string;
   topup_routing_ach?: string;
   topup_routing_wire?: string;
+  contact_phone?: string;
+  contact_address?: string;
+  contact_email?: string;
+  whatsapp_number?: string;
+  whatsapp_message?: string;
+  brand_name?: string;
 }
 
 export const DEFAULT_NOTIFICATION_SOUND_URL = "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg";
