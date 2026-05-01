@@ -85,6 +85,48 @@ const Admin = () => {
   // Email logs
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
 
+  // Contact messages
+  const [contactMessages, setContactMessages] = useState<Array<{ id: string; name: string; email: string; phone: string; subject: string; message: string; status: string; created_at: string }>>([]);
+  const [viewingMessage, setViewingMessage] = useState<typeof contactMessages[number] | null>(null);
+
+  // Static pages
+  const [pages, setPages] = useState<Array<{ id: string; slug: string; title: string; content: string; updated_at: string }>>([]);
+  const [editingPage, setEditingPage] = useState<typeof pages[number] | null>(null);
+  const [pageForm, setPageForm] = useState({ title: "", content: "" });
+  const [savingPage, setSavingPage] = useState(false);
+
+  const fetchContactMessages = async () => {
+    const { data } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
+    if (data) setContactMessages(data as any);
+  };
+  const fetchPages = async () => {
+    const { data } = await supabase.from("static_pages").select("*").order("slug");
+    if (data) setPages(data as any);
+  };
+  const deleteMessage = async (id: string) => {
+    const { error } = await supabase.from("contact_messages").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Message deleted");
+    fetchContactMessages();
+  };
+  const markMessageRead = async (id: string) => {
+    await supabase.from("contact_messages").update({ status: "read" }).eq("id", id);
+    fetchContactMessages();
+  };
+  const savePage = async () => {
+    if (!editingPage) return;
+    setSavingPage(true);
+    const { error } = await supabase.from("static_pages").update({
+      title: pageForm.title,
+      content: pageForm.content,
+    }).eq("id", editingPage.id);
+    setSavingPage(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Page saved");
+    setEditingPage(null);
+    fetchPages();
+  };
+
   const fetchAll = async () => {
     setDataLoading(true);
     const [pRes, aRes, tRes, rRes] = await Promise.all([
