@@ -16,6 +16,8 @@ import Notifications from "./pages/Notifications";
 import SettingsPage from "./pages/SettingsPage";
 import Admin from "./pages/Admin";
 import PayComingSoon from "./pages/PayComingSoon";
+import Contact from "./pages/Contact";
+import StaticPage from "./pages/StaticPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +56,8 @@ const App = () => (
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/pages/:slug" element={<StaticPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </NotificationSoundProvider>
