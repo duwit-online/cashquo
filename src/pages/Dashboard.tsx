@@ -280,6 +280,7 @@ const Dashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+      <WhatsAppFab />
     </DashboardLayout>
   );
 };
