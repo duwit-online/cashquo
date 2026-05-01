@@ -11,6 +11,8 @@ import { motion } from "framer-motion";
 import heroPhone from "@/assets/hero-phone.png";
 import heroPeople from "@/assets/hero-people.png";
 import cardMockup from "@/assets/card-mockup.png";
+import MarketTicker from "@/components/MarketTicker";
+import WhatsAppFab from "@/components/WhatsAppFab";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -59,6 +61,7 @@ const Index = () => {
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-foreground transition-colors">How It Works</a>
             <a href="#security" className="hover:text-foreground transition-colors">Security</a>
+            <a href="/contact" className="hover:text-foreground transition-colors">Contact</a>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
@@ -80,8 +83,13 @@ const Index = () => {
         </div>
       </nav>
 
+      {/* Live market ticker */}
+      <div className="pt-16">
+        <MarketTicker variant="dark" />
+      </div>
+
       {/* ══════════════ HERO ══════════════ */}
-      <section className="pt-28 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 relative">
+      <section className="pt-12 sm:pt-16 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 relative">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-10 left-1/4 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/[0.06] rounded-full blur-3xl" />
@@ -580,17 +588,15 @@ const Index = () => {
             <div>
               <h4 className="text-sm font-semibold mb-3">Company</h4>
               <ul className="space-y-2 text-xs text-muted-foreground">
-                <li className="hover:text-foreground transition-colors cursor-pointer">About Us</li>
-                <li className="hover:text-foreground transition-colors cursor-pointer">Careers</li>
-                <li className="hover:text-foreground transition-colors cursor-pointer">Press</li>
+                <li><a href="/pages/about" className="hover:text-foreground transition-colors">About Us</a></li>
+                <li><a href="/contact" className="hover:text-foreground transition-colors">Contact</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-sm font-semibold mb-3">Legal</h4>
               <ul className="space-y-2 text-xs text-muted-foreground">
-                <li className="hover:text-foreground transition-colors cursor-pointer">Privacy Policy</li>
-                <li className="hover:text-foreground transition-colors cursor-pointer">Terms of Service</li>
-                <li className="hover:text-foreground transition-colors cursor-pointer">Cookie Policy</li>
+                <li><a href="/pages/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
+                <li><a href="/pages/terms" className="hover:text-foreground transition-colors">Terms of Service</a></li>
               </ul>
             </div>
           </div>
@@ -606,6 +612,8 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      <WhatsAppFab />
     </div>
   );
 };
