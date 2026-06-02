@@ -541,6 +541,7 @@ const Admin = () => {
             <TabsTrigger value="pages" className="gap-1"><FileText className="h-3.5 w-3.5" /> Pages</TabsTrigger>
             <TabsTrigger value="templates" className="gap-1"><FileText className="h-3.5 w-3.5" /> Email Templates</TabsTrigger>
             <TabsTrigger value="logs" className="gap-1"><Clock className="h-3.5 w-3.5" /> Email Logs</TabsTrigger>
+            <TabsTrigger value="compose" className="gap-1"><Send className="h-3.5 w-3.5" /> Compose</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
