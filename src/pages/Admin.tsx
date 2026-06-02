@@ -1188,6 +1188,62 @@ const Admin = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Compose Email Dialog */}
+      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Compose Email</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Send to</Label>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {(["custom","users","all"] as const).map(m => (
+                  <Button key={m} type="button" size="sm" variant={composeMode === m ? "default" : "outline"} onClick={() => setComposeMode(m)}>
+                    {m === "custom" ? "Custom address" : m === "users" ? "Pick users" : `All users (${profiles.length})`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            {composeMode === "custom" && (
+              <div>
+                <Label className="text-xs">Recipient email(s)</Label>
+                <Input value={composeRecipients} onChange={(e) => setComposeRecipients(e.target.value)} placeholder="user@example.com, another@example.com" />
+              </div>
+            )}
+            {composeMode === "users" && (
+              <div>
+                <Label className="text-xs">Select users ({composeUserIds.length} selected)</Label>
+                <div className="max-h-48 overflow-y-auto border border-border rounded-lg p-2 space-y-1">
+                  {profiles.map(p => (
+                    <label key={p.user_id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/40 cursor-pointer text-sm">
+                      <input type="checkbox" checked={composeUserIds.includes(p.user_id)} onChange={(e) => setComposeUserIds(prev => e.target.checked ? [...prev, p.user_id] : prev.filter(id => id !== p.user_id))} />
+                      <span className="flex-1">{p.full_name || `${p.first_name} ${p.last_name}`.trim() || p.email}</span>
+                      <span className="text-xs text-muted-foreground">{p.email}</span>
+                    </label>
+                  ))}
+                  {profiles.length === 0 && <p className="text-xs text-muted-foreground p-2">No users found</p>}
+                </div>
+              </div>
+            )}
+            {composeMode === "all" && (
+              <p className="text-xs text-muted-foreground p-2 rounded bg-warning/10 border border-warning/30">This will email all {profiles.length} registered users. Use carefully.</p>
+            )}
+            <div>
+              <Label className="text-xs">Subject</Label>
+              <Input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Subject line" />
+            </div>
+            <div>
+              <Label className="text-xs">Message (plain text or HTML)</Label>
+              <Textarea rows={10} value={composeBody} onChange={(e) => setComposeBody(e.target.value)} placeholder="Write your message..." />
+              <p className="text-[11px] text-muted-foreground mt-1">If your message starts with &lt; it will be sent as HTML, otherwise it will be wrapped in a styled container.</p>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button onClick={sendCompose} disabled={sendingCompose}>{sendingCompose ? "Sending..." : "Send Email"}</Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
