@@ -1159,7 +1159,8 @@ const Admin = () => {
               {viewingMessage.subject && <div><Label className="text-xs">Subject</Label><p className="font-medium">{viewingMessage.subject}</p></div>}
               <div><Label className="text-xs">Message</Label><div className="rounded-lg border border-border bg-muted/30 p-3 whitespace-pre-wrap">{viewingMessage.message}</div></div>
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => window.open(`mailto:${viewingMessage.email}?subject=${encodeURIComponent("Re: " + (viewingMessage.subject || "Your message"))}`)}>Reply via email</Button>
+                <Button variant="outline" className="flex-1" onClick={() => { const m = viewingMessage; setViewingMessage(null); openCompose({ to: m.email, subject: "Re: " + (m.subject || "Your message"), body: `\n\n----- Original message from ${m.name} -----\n${m.message}` }); }}>Reply in app</Button>
+                <Button variant="ghost" onClick={() => window.open(`mailto:${viewingMessage.email}?subject=${encodeURIComponent("Re: " + (viewingMessage.subject || "Your message"))}`)}>Mail client</Button>
                 <Button variant="destructive" onClick={() => { deleteMessage(viewingMessage.id); setViewingMessage(null); }}>Delete</Button>
               </div>
             </div>
