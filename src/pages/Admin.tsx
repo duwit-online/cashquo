@@ -89,6 +89,51 @@ const Admin = () => {
   const [contactMessages, setContactMessages] = useState<Array<{ id: string; name: string; email: string; phone: string; subject: string; message: string; status: string; created_at: string }>>([]);
   const [viewingMessage, setViewingMessage] = useState<typeof contactMessages[number] | null>(null);
 
+  // Compose email (admin -> users)
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeMode, setComposeMode] = useState<"all" | "users" | "custom">("custom");
+  const [composeUserIds, setComposeUserIds] = useState<string[]>([]);
+  const [composeRecipients, setComposeRecipients] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [sendingCompose, setSendingCompose] = useState(false);
+
+  const openCompose = (preset?: { to?: string; subject?: string; body?: string }) => {
+    setComposeMode(preset?.to ? "custom" : "custom");
+    setComposeRecipients(preset?.to ?? "");
+    setComposeUserIds([]);
+    setComposeSubject(preset?.subject ?? "");
+    setComposeBody(preset?.body ?? "");
+    setComposeOpen(true);
+  };
+
+  const sendCompose = async () => {
+    if (!composeSubject.trim() || !composeBody.trim()) { toast.error("Subject and message required"); return; }
+    if (composeMode === "custom" && !composeRecipients.trim()) { toast.error("Enter at least one recipient"); return; }
+    if (composeMode === "users" && composeUserIds.length === 0) { toast.error("Pick at least one user"); return; }
+    setSendingCompose(true);
+    try {
+      const html = composeBody.trim().startsWith("<")
+        ? composeBody
+        : `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;line-height:1.6;color:#0f172a;white-space:pre-wrap">${composeBody.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`;
+      const payload: any = { mode: composeMode, subject: composeSubject, html };
+      if (composeMode === "custom") payload.recipients = composeRecipients.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+      if (composeMode === "users") payload.user_ids = composeUserIds;
+      const { data, error } = await supabase.functions.invoke("admin-send-email", { body: payload });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const sent = (data as any)?.sent ?? 0;
+      const failed = (data as any)?.failed ?? 0;
+      toast.success(`Sent ${sent} email${sent === 1 ? "" : "s"}${failed ? `, ${failed} failed` : ""}`);
+      if (!failed) setComposeOpen(false);
+      fetchLogs();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to send");
+    } finally {
+      setSendingCompose(false);
+    }
+  };
+
   // Static pages
   const [pages, setPages] = useState<Array<{ id: string; slug: string; title: string; content: string; updated_at: string }>>([]);
   const [editingPage, setEditingPage] = useState<typeof pages[number] | null>(null);
@@ -496,6 +541,7 @@ const Admin = () => {
             <TabsTrigger value="pages" className="gap-1"><FileText className="h-3.5 w-3.5" /> Pages</TabsTrigger>
             <TabsTrigger value="templates" className="gap-1"><FileText className="h-3.5 w-3.5" /> Email Templates</TabsTrigger>
             <TabsTrigger value="logs" className="gap-1"><Clock className="h-3.5 w-3.5" /> Email Logs</TabsTrigger>
+            <TabsTrigger value="compose" className="gap-1"><Send className="h-3.5 w-3.5" /> Compose</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
@@ -820,6 +866,34 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* Compose Tab */}
+          <TabsContent value="compose">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-display">Compose Email</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Send custom emails to any user or address using your configured SMTP/Resend.</p>
+                </div>
+                <Button onClick={() => openCompose()}><Send className="h-4 w-4 mr-1" /> New Email</Button>
+              </CardHeader>
+              <CardContent>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <button type="button" onClick={() => { setComposeMode("all"); openCompose(); setComposeMode("all"); }} className="p-4 rounded-lg border border-border text-left hover:bg-muted/40">
+                    <p className="font-medium text-sm">Email all users</p>
+                    <p className="text-xs text-muted-foreground mt-1">Broadcast to every registered account ({profiles.length}).</p>
+                  </button>
+                  <button type="button" onClick={() => { openCompose(); setComposeMode("users"); }} className="p-4 rounded-lg border border-border text-left hover:bg-muted/40">
+                    <p className="font-medium text-sm">Email selected users</p>
+                    <p className="text-xs text-muted-foreground mt-1">Pick individual users from your roster.</p>
+                  </button>
+                  <button type="button" onClick={() => { openCompose(); setComposeMode("custom"); }} className="p-4 rounded-lg border border-border text-left hover:bg-muted/40">
+                    <p className="font-medium text-sm">Email custom address</p>
+                    <p className="text-xs text-muted-foreground mt-1">Enter any email address(es), comma separated.</p>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -1085,7 +1159,8 @@ const Admin = () => {
               {viewingMessage.subject && <div><Label className="text-xs">Subject</Label><p className="font-medium">{viewingMessage.subject}</p></div>}
               <div><Label className="text-xs">Message</Label><div className="rounded-lg border border-border bg-muted/30 p-3 whitespace-pre-wrap">{viewingMessage.message}</div></div>
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => window.open(`mailto:${viewingMessage.email}?subject=${encodeURIComponent("Re: " + (viewingMessage.subject || "Your message"))}`)}>Reply via email</Button>
+                <Button variant="outline" className="flex-1" onClick={() => { const m = viewingMessage; setViewingMessage(null); openCompose({ to: m.email, subject: "Re: " + (m.subject || "Your message"), body: `\n\n----- Original message from ${m.name} -----\n${m.message}` }); }}>Reply in app</Button>
+                <Button variant="ghost" onClick={() => window.open(`mailto:${viewingMessage.email}?subject=${encodeURIComponent("Re: " + (viewingMessage.subject || "Your message"))}`)}>Mail client</Button>
                 <Button variant="destructive" onClick={() => { deleteMessage(viewingMessage.id); setViewingMessage(null); }}>Delete</Button>
               </div>
             </div>
@@ -1111,6 +1186,62 @@ const Admin = () => {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Compose Email Dialog */}
+      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Compose Email</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Send to</Label>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {(["custom","users","all"] as const).map(m => (
+                  <Button key={m} type="button" size="sm" variant={composeMode === m ? "default" : "outline"} onClick={() => setComposeMode(m)}>
+                    {m === "custom" ? "Custom address" : m === "users" ? "Pick users" : `All users (${profiles.length})`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            {composeMode === "custom" && (
+              <div>
+                <Label className="text-xs">Recipient email(s)</Label>
+                <Input value={composeRecipients} onChange={(e) => setComposeRecipients(e.target.value)} placeholder="user@example.com, another@example.com" />
+              </div>
+            )}
+            {composeMode === "users" && (
+              <div>
+                <Label className="text-xs">Select users ({composeUserIds.length} selected)</Label>
+                <div className="max-h-48 overflow-y-auto border border-border rounded-lg p-2 space-y-1">
+                  {profiles.map(p => (
+                    <label key={p.user_id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/40 cursor-pointer text-sm">
+                      <input type="checkbox" checked={composeUserIds.includes(p.user_id)} onChange={(e) => setComposeUserIds(prev => e.target.checked ? [...prev, p.user_id] : prev.filter(id => id !== p.user_id))} />
+                      <span className="flex-1">{p.full_name || `${p.first_name} ${p.last_name}`.trim() || p.email}</span>
+                      <span className="text-xs text-muted-foreground">{p.email}</span>
+                    </label>
+                  ))}
+                  {profiles.length === 0 && <p className="text-xs text-muted-foreground p-2">No users found</p>}
+                </div>
+              </div>
+            )}
+            {composeMode === "all" && (
+              <p className="text-xs text-muted-foreground p-2 rounded bg-warning/10 border border-warning/30">This will email all {profiles.length} registered users. Use carefully.</p>
+            )}
+            <div>
+              <Label className="text-xs">Subject</Label>
+              <Input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Subject line" />
+            </div>
+            <div>
+              <Label className="text-xs">Message (plain text or HTML)</Label>
+              <Textarea rows={10} value={composeBody} onChange={(e) => setComposeBody(e.target.value)} placeholder="Write your message..." />
+              <p className="text-[11px] text-muted-foreground mt-1">If your message starts with &lt; it will be sent as HTML, otherwise it will be wrapped in a styled container.</p>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button onClick={sendCompose} disabled={sendingCompose}>{sendingCompose ? "Sending..." : "Send Email"}</Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
