@@ -89,6 +89,51 @@ const Admin = () => {
   const [contactMessages, setContactMessages] = useState<Array<{ id: string; name: string; email: string; phone: string; subject: string; message: string; status: string; created_at: string }>>([]);
   const [viewingMessage, setViewingMessage] = useState<typeof contactMessages[number] | null>(null);
 
+  // Compose email (admin -> users)
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeMode, setComposeMode] = useState<"all" | "users" | "custom">("custom");
+  const [composeUserIds, setComposeUserIds] = useState<string[]>([]);
+  const [composeRecipients, setComposeRecipients] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [sendingCompose, setSendingCompose] = useState(false);
+
+  const openCompose = (preset?: { to?: string; subject?: string; body?: string }) => {
+    setComposeMode(preset?.to ? "custom" : "custom");
+    setComposeRecipients(preset?.to ?? "");
+    setComposeUserIds([]);
+    setComposeSubject(preset?.subject ?? "");
+    setComposeBody(preset?.body ?? "");
+    setComposeOpen(true);
+  };
+
+  const sendCompose = async () => {
+    if (!composeSubject.trim() || !composeBody.trim()) { toast.error("Subject and message required"); return; }
+    if (composeMode === "custom" && !composeRecipients.trim()) { toast.error("Enter at least one recipient"); return; }
+    if (composeMode === "users" && composeUserIds.length === 0) { toast.error("Pick at least one user"); return; }
+    setSendingCompose(true);
+    try {
+      const html = composeBody.trim().startsWith("<")
+        ? composeBody
+        : `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;line-height:1.6;color:#0f172a;white-space:pre-wrap">${composeBody.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`;
+      const payload: any = { mode: composeMode, subject: composeSubject, html };
+      if (composeMode === "custom") payload.recipients = composeRecipients.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+      if (composeMode === "users") payload.user_ids = composeUserIds;
+      const { data, error } = await supabase.functions.invoke("admin-send-email", { body: payload });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const sent = (data as any)?.sent ?? 0;
+      const failed = (data as any)?.failed ?? 0;
+      toast.success(`Sent ${sent} email${sent === 1 ? "" : "s"}${failed ? `, ${failed} failed` : ""}`);
+      if (!failed) setComposeOpen(false);
+      fetchEmailLogs();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to send");
+    } finally {
+      setSendingCompose(false);
+    }
+  };
+
   // Static pages
   const [pages, setPages] = useState<Array<{ id: string; slug: string; title: string; content: string; updated_at: string }>>([]);
   const [editingPage, setEditingPage] = useState<typeof pages[number] | null>(null);
