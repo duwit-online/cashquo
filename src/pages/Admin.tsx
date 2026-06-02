@@ -866,6 +866,34 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* Compose Tab */}
+          <TabsContent value="compose">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-display">Compose Email</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Send custom emails to any user or address using your configured SMTP/Resend.</p>
+                </div>
+                <Button onClick={() => openCompose()}><Send className="h-4 w-4 mr-1" /> New Email</Button>
+              </CardHeader>
+              <CardContent>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <button type="button" onClick={() => { setComposeMode("all"); openCompose(); setComposeMode("all"); }} className="p-4 rounded-lg border border-border text-left hover:bg-muted/40">
+                    <p className="font-medium text-sm">Email all users</p>
+                    <p className="text-xs text-muted-foreground mt-1">Broadcast to every registered account ({profiles.length}).</p>
+                  </button>
+                  <button type="button" onClick={() => { openCompose(); setComposeMode("users"); }} className="p-4 rounded-lg border border-border text-left hover:bg-muted/40">
+                    <p className="font-medium text-sm">Email selected users</p>
+                    <p className="text-xs text-muted-foreground mt-1">Pick individual users from your roster.</p>
+                  </button>
+                  <button type="button" onClick={() => { openCompose(); setComposeMode("custom"); }} className="p-4 rounded-lg border border-border text-left hover:bg-muted/40">
+                    <p className="font-medium text-sm">Email custom address</p>
+                    <p className="text-xs text-muted-foreground mt-1">Enter any email address(es), comma separated.</p>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
