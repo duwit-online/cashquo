@@ -935,8 +935,74 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Inbox Tab */}
+          <TabsContent value="inbox">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-display">Inbox</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Incoming emails fetched from your IMAP mailbox. Configure IMAP under Settings.</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={refreshInbox} disabled={fetchingInbox} className="gap-1">
+                  <RefreshCw className={`h-4 w-4 ${fetchingInbox ? "animate-spin" : ""}`} /> {fetchingInbox ? "Fetching..." : "Refresh"}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {inbox.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-6 text-center">No messages yet. Click Refresh to pull new mail from your IMAP server.</p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {inbox.map((m) => (
+                      <button key={m.id} type="button" onClick={() => { setViewingInbox(m); if (!m.is_read) markInboxRead(m.id); }} className={`w-full text-left py-3 flex items-start gap-3 hover:bg-muted/40 px-2 rounded ${!m.is_read ? "font-semibold" : ""}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm truncate">{m.from_name || m.from_address}</span>
+                            {!m.is_read && <span className="h-2 w-2 rounded-full bg-accent flex-shrink-0" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{m.subject || "(no subject)"}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{m.body_text.slice(0, 120)}</p>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">{format(new Date(m.received_at), "MMM d, HH:mm")}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* View Inbox Message */}
+      <Dialog open={!!viewingInbox} onOpenChange={(open) => !open && setViewingInbox(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="truncate">{viewingInbox?.subject || "(no subject)"}</DialogTitle></DialogHeader>
+          {viewingInbox && (
+            <div className="space-y-3 text-sm">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border-b border-border pb-2">
+                <span><strong className="text-foreground">From:</strong> {viewingInbox.from_name ? `${viewingInbox.from_name} <${viewingInbox.from_address}>` : viewingInbox.from_address}</span>
+                <span><strong className="text-foreground">To:</strong> {viewingInbox.to_address}</span>
+                <span><strong className="text-foreground">Date:</strong> {format(new Date(viewingInbox.received_at), "MMM d, yyyy HH:mm")}</span>
+              </div>
+              {viewingInbox.body_html ? (
+                <div className="border rounded-md p-3 bg-white max-h-[50vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: viewingInbox.body_html }} />
+              ) : (
+                <pre className="whitespace-pre-wrap text-sm bg-muted/30 p-3 rounded-md max-h-[50vh] overflow-y-auto">{viewingInbox.body_text || "(empty body)"}</pre>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            {viewingInbox && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => deleteInboxMsg(viewingInbox.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
+                <Button size="sm" onClick={() => { openCompose({ to: viewingInbox.from_address, subject: `Re: ${viewingInbox.subject}`, body: `\n\n---\nOn ${format(new Date(viewingInbox.received_at), "PPpp")}, ${viewingInbox.from_address} wrote:\n${viewingInbox.body_text}` }); setViewingInbox(null); }}><Reply className="h-4 w-4 mr-1" /> Reply</Button>
+              </>
+            )}
+            <DialogClose asChild><Button variant="ghost" size="sm">Close</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* View User Dialog */}
       <Dialog open={!!viewingUser} onOpenChange={(open) => !open && setViewingUser(null)}>
