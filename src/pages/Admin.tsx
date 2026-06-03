@@ -141,6 +141,44 @@ const Admin = () => {
   const [pageForm, setPageForm] = useState({ title: "", content: "" });
   const [savingPage, setSavingPage] = useState(false);
 
+  // Admin inbox (IMAP)
+  interface InboxMsg { id: string; from_address: string; from_name: string; to_address: string; subject: string; body_text: string; body_html: string; received_at: string; is_read: boolean; }
+  const [inbox, setInbox] = useState<InboxMsg[]>([]);
+  const [fetchingInbox, setFetchingInbox] = useState(false);
+  const [viewingInbox, setViewingInbox] = useState<InboxMsg | null>(null);
+
+  const fetchInboxList = async () => {
+    const { data } = await supabase.from("admin_inbox").select("*").order("received_at", { ascending: false }).limit(200);
+    if (data) setInbox(data as any);
+  };
+
+  const refreshInbox = async () => {
+    setFetchingInbox(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-inbox", { body: {} });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message || "Fetch failed");
+      const inserted = (data as any)?.inserted ?? 0;
+      toast.success(inserted ? `${inserted} new message${inserted === 1 ? "" : "s"}` : "Inbox up to date");
+      await fetchInboxList();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to fetch inbox");
+    }
+    setFetchingInbox(false);
+  };
+
+  const markInboxRead = async (id: string) => {
+    await supabase.from("admin_inbox").update({ is_read: true }).eq("id", id);
+    fetchInboxList();
+  };
+
+  const deleteInboxMsg = async (id: string) => {
+    const { error } = await supabase.from("admin_inbox").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Deleted");
+    setViewingInbox(null);
+    fetchInboxList();
+  };
+
   const fetchContactMessages = async () => {
     const { data } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
     if (data) setContactMessages(data as any);
