@@ -582,6 +582,7 @@ const Admin = () => {
             <TabsTrigger value="templates" className="gap-1"><FileText className="h-3.5 w-3.5" /> Email Templates</TabsTrigger>
             <TabsTrigger value="logs" className="gap-1"><Clock className="h-3.5 w-3.5" /> Email Logs</TabsTrigger>
             <TabsTrigger value="compose" className="gap-1"><Send className="h-3.5 w-3.5" /> Compose</TabsTrigger>
+            <TabsTrigger value="inbox" className="gap-1"><Inbox className="h-3.5 w-3.5" /> Inbox{inbox.filter(m => !m.is_read).length > 0 && (<span className="ml-1 px-1.5 rounded bg-destructive text-destructive-foreground text-[10px]">{inbox.filter(m => !m.is_read).length}</span>)}</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
