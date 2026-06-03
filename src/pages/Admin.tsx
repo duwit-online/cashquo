@@ -1205,6 +1205,29 @@ const Admin = () => {
                 </>
               )}
             </div>
+
+            {/* IMAP / Incoming Mail */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Inbox className="h-4 w-4" /> Incoming Mail (IMAP)</h3>
+              <p className="text-xs text-muted-foreground">Configure IMAP to receive replies and new emails into the admin Inbox tab.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">IMAP Host</Label><Input value={emailSettings.imap_host} onChange={(e) => setEmailSettings({ ...emailSettings, imap_host: e.target.value })} placeholder="imap.gmail.com" /></div>
+                <div><Label className="text-xs">Port</Label><Input value={emailSettings.imap_port} onChange={(e) => setEmailSettings({ ...emailSettings, imap_port: e.target.value })} placeholder="993" /></div>
+              </div>
+              <div><Label className="text-xs">Username</Label><Input value={emailSettings.imap_user} onChange={(e) => setEmailSettings({ ...emailSettings, imap_user: e.target.value })} /></div>
+              <div><Label className="text-xs">Password</Label><Input type="password" value={emailSettings.imap_password} onChange={(e) => setEmailSettings({ ...emailSettings, imap_password: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Mailbox</Label><Input value={emailSettings.imap_mailbox} onChange={(e) => setEmailSettings({ ...emailSettings, imap_mailbox: e.target.value })} placeholder="INBOX" /></div>
+                <div>
+                  <Label className="text-xs">Use TLS/SSL</Label>
+                  <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={emailSettings.imap_tls} onChange={(e) => setEmailSettings({ ...emailSettings, imap_tls: e.target.value })}>
+                    <option value="true">Yes (port 993)</option>
+                    <option value="false">No (port 143)</option>
+                  </select>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Tip: For Gmail, use an App Password and enable IMAP in Gmail settings.</p>
+            </div>
           </div>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
