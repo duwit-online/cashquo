@@ -986,7 +986,7 @@ const Admin = () => {
                 <span><strong className="text-foreground">Date:</strong> {format(new Date(viewingInbox.received_at), "MMM d, yyyy HH:mm")}</span>
               </div>
               {viewingInbox.body_html ? (
-                <div className="border rounded-md p-3 bg-white max-h-[50vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: viewingInbox.body_html }} />
+                <div className="border rounded-md p-3 bg-background max-h-[50vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: viewingInbox.body_html }} />
               ) : (
                 <pre className="whitespace-pre-wrap text-sm bg-muted/30 p-3 rounded-md max-h-[50vh] overflow-y-auto">{viewingInbox.body_text || "(empty body)"}</pre>
               )}
