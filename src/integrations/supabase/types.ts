@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_inbox: {
+        Row: {
+          body_html: string
+          body_text: string
+          created_at: string
+          from_address: string
+          from_name: string
+          id: string
+          is_read: boolean
+          message_uid: string
+          received_at: string
+          subject: string
+          to_address: string
+        }
+        Insert: {
+          body_html?: string
+          body_text?: string
+          created_at?: string
+          from_address?: string
+          from_name?: string
+          id?: string
+          is_read?: boolean
+          message_uid: string
+          received_at?: string
+          subject?: string
+          to_address?: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string
+          created_at?: string
+          from_address?: string
+          from_name?: string
+          id?: string
+          is_read?: boolean
+          message_uid?: string
+          received_at?: string
+          subject?: string
+          to_address?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string

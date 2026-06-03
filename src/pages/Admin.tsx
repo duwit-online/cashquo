@@ -15,7 +15,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings, Send, FileText, Clock, ShieldCheck, ShieldOff, Landmark, Phone, MessageSquare } from "lucide-react";
+import { Users, DollarSign, Activity, AlertTriangle, Plus, Pencil, Trash2, Eye, Wallet, ReceiptText, Volume2, Mail, Settings, Send, FileText, Clock, ShieldCheck, ShieldOff, Landmark, Phone, MessageSquare, Inbox, RefreshCw, Reply } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ROUTING_NUMBER } from "@/lib/constants";
@@ -68,6 +68,7 @@ const Admin = () => {
     smtp_from_email: "", smtp_from_name: "Fidelity CashQuora", resend_api_key: "", notification_sound_url: "",
     topup_account_name: "", topup_bank_name: "", topup_account_type: "", topup_account_number: "", topup_routing_ach: "", topup_routing_wire: "",
     contact_phone: "", contact_address: "", contact_email: "", whatsapp_number: "", whatsapp_message: "", brand_name: "Fidelity CashQuora",
+    imap_host: "", imap_port: "993", imap_user: "", imap_password: "", imap_tls: "true", imap_mailbox: "INBOX",
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [soundFile, setSoundFile] = useState<File | null>(null);
@@ -139,6 +140,44 @@ const Admin = () => {
   const [editingPage, setEditingPage] = useState<typeof pages[number] | null>(null);
   const [pageForm, setPageForm] = useState({ title: "", content: "" });
   const [savingPage, setSavingPage] = useState(false);
+
+  // Admin inbox (IMAP)
+  interface InboxMsg { id: string; from_address: string; from_name: string; to_address: string; subject: string; body_text: string; body_html: string; received_at: string; is_read: boolean; }
+  const [inbox, setInbox] = useState<InboxMsg[]>([]);
+  const [fetchingInbox, setFetchingInbox] = useState(false);
+  const [viewingInbox, setViewingInbox] = useState<InboxMsg | null>(null);
+
+  const fetchInboxList = async () => {
+    const { data } = await supabase.from("admin_inbox").select("*").order("received_at", { ascending: false }).limit(200);
+    if (data) setInbox(data as any);
+  };
+
+  const refreshInbox = async () => {
+    setFetchingInbox(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-inbox", { body: {} });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message || "Fetch failed");
+      const inserted = (data as any)?.inserted ?? 0;
+      toast.success(inserted ? `${inserted} new message${inserted === 1 ? "" : "s"}` : "Inbox up to date");
+      await fetchInboxList();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to fetch inbox");
+    }
+    setFetchingInbox(false);
+  };
+
+  const markInboxRead = async (id: string) => {
+    await supabase.from("admin_inbox").update({ is_read: true }).eq("id", id);
+    fetchInboxList();
+  };
+
+  const deleteInboxMsg = async (id: string) => {
+    const { error } = await supabase.from("admin_inbox").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Deleted");
+    setViewingInbox(null);
+    fetchInboxList();
+  };
 
   const fetchContactMessages = async () => {
     const { data } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
@@ -214,6 +253,7 @@ const Admin = () => {
     fetchLogs();
     fetchContactMessages();
     fetchPages();
+    fetchInboxList();
   }, [isAdmin, authLoading]);
 
   if (authLoading) {
@@ -542,6 +582,7 @@ const Admin = () => {
             <TabsTrigger value="templates" className="gap-1"><FileText className="h-3.5 w-3.5" /> Email Templates</TabsTrigger>
             <TabsTrigger value="logs" className="gap-1"><Clock className="h-3.5 w-3.5" /> Email Logs</TabsTrigger>
             <TabsTrigger value="compose" className="gap-1"><Send className="h-3.5 w-3.5" /> Compose</TabsTrigger>
+            <TabsTrigger value="inbox" className="gap-1"><Inbox className="h-3.5 w-3.5" /> Inbox{inbox.filter(m => !m.is_read).length > 0 && (<span className="ml-1 px-1.5 rounded bg-destructive text-destructive-foreground text-[10px]">{inbox.filter(m => !m.is_read).length}</span>)}</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
@@ -894,8 +935,74 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Inbox Tab */}
+          <TabsContent value="inbox">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-display">Inbox</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Incoming emails fetched from your IMAP mailbox. Configure IMAP under Settings.</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={refreshInbox} disabled={fetchingInbox} className="gap-1">
+                  <RefreshCw className={`h-4 w-4 ${fetchingInbox ? "animate-spin" : ""}`} /> {fetchingInbox ? "Fetching..." : "Refresh"}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {inbox.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-6 text-center">No messages yet. Click Refresh to pull new mail from your IMAP server.</p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {inbox.map((m) => (
+                      <button key={m.id} type="button" onClick={() => { setViewingInbox(m); if (!m.is_read) markInboxRead(m.id); }} className={`w-full text-left py-3 flex items-start gap-3 hover:bg-muted/40 px-2 rounded ${!m.is_read ? "font-semibold" : ""}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm truncate">{m.from_name || m.from_address}</span>
+                            {!m.is_read && <span className="h-2 w-2 rounded-full bg-accent flex-shrink-0" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{m.subject || "(no subject)"}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{m.body_text.slice(0, 120)}</p>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">{format(new Date(m.received_at), "MMM d, HH:mm")}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* View Inbox Message */}
+      <Dialog open={!!viewingInbox} onOpenChange={(open) => !open && setViewingInbox(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="truncate">{viewingInbox?.subject || "(no subject)"}</DialogTitle></DialogHeader>
+          {viewingInbox && (
+            <div className="space-y-3 text-sm">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border-b border-border pb-2">
+                <span><strong className="text-foreground">From:</strong> {viewingInbox.from_name ? `${viewingInbox.from_name} <${viewingInbox.from_address}>` : viewingInbox.from_address}</span>
+                <span><strong className="text-foreground">To:</strong> {viewingInbox.to_address}</span>
+                <span><strong className="text-foreground">Date:</strong> {format(new Date(viewingInbox.received_at), "MMM d, yyyy HH:mm")}</span>
+              </div>
+              {viewingInbox.body_html ? (
+                <div className="border rounded-md p-3 bg-white max-h-[50vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: viewingInbox.body_html }} />
+              ) : (
+                <pre className="whitespace-pre-wrap text-sm bg-muted/30 p-3 rounded-md max-h-[50vh] overflow-y-auto">{viewingInbox.body_text || "(empty body)"}</pre>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            {viewingInbox && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => deleteInboxMsg(viewingInbox.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
+                <Button size="sm" onClick={() => { openCompose({ to: viewingInbox.from_address, subject: `Re: ${viewingInbox.subject}`, body: `\n\n---\nOn ${format(new Date(viewingInbox.received_at), "PPpp")}, ${viewingInbox.from_address} wrote:\n${viewingInbox.body_text}` }); setViewingInbox(null); }}><Reply className="h-4 w-4 mr-1" /> Reply</Button>
+              </>
+            )}
+            <DialogClose asChild><Button variant="ghost" size="sm">Close</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* View User Dialog */}
       <Dialog open={!!viewingUser} onOpenChange={(open) => !open && setViewingUser(null)}>
@@ -1097,6 +1204,29 @@ const Admin = () => {
                   </div>
                 </>
               )}
+            </div>
+
+            {/* IMAP / Incoming Mail */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Inbox className="h-4 w-4" /> Incoming Mail (IMAP)</h3>
+              <p className="text-xs text-muted-foreground">Configure IMAP to receive replies and new emails into the admin Inbox tab.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">IMAP Host</Label><Input value={emailSettings.imap_host} onChange={(e) => setEmailSettings({ ...emailSettings, imap_host: e.target.value })} placeholder="imap.gmail.com" /></div>
+                <div><Label className="text-xs">Port</Label><Input value={emailSettings.imap_port} onChange={(e) => setEmailSettings({ ...emailSettings, imap_port: e.target.value })} placeholder="993" /></div>
+              </div>
+              <div><Label className="text-xs">Username</Label><Input value={emailSettings.imap_user} onChange={(e) => setEmailSettings({ ...emailSettings, imap_user: e.target.value })} /></div>
+              <div><Label className="text-xs">Password</Label><Input type="password" value={emailSettings.imap_password} onChange={(e) => setEmailSettings({ ...emailSettings, imap_password: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Mailbox</Label><Input value={emailSettings.imap_mailbox} onChange={(e) => setEmailSettings({ ...emailSettings, imap_mailbox: e.target.value })} placeholder="INBOX" /></div>
+                <div>
+                  <Label className="text-xs">Use TLS/SSL</Label>
+                  <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={emailSettings.imap_tls} onChange={(e) => setEmailSettings({ ...emailSettings, imap_tls: e.target.value })}>
+                    <option value="true">Yes (port 993)</option>
+                    <option value="false">No (port 143)</option>
+                  </select>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Tip: For Gmail, use an App Password and enable IMAP in Gmail settings.</p>
             </div>
           </div>
           <DialogFooter>
