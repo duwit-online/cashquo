@@ -31,6 +31,7 @@ interface UserRole { id: string; user_id: string; role: string; }
 interface EmailTemplate { id: string; name: string; trigger_type: string; subject: string; html_body: string; is_active: boolean; created_at: string; updated_at: string; }
 interface EmailTemplate { id: string; name: string; trigger_type: string; subject: string; html_body: string; is_active: boolean; created_at: string; updated_at: string; }
 interface EmailLog { id: string; recipient_email: string; trigger_type: string; template_id: string | null; status: string; error_message: string | null; created_at: string; }
+interface SentEmail { id: string; created_at: string; mode: string; subject: string; html_body: string; recipients: string[]; sent_count: number; failed_count: number; errors: any; }
 
 const TRIGGER_TYPES = ["signup", "login", "credit", "debit", "reversal", "account_statement", "new_login"];
 const TEMPLATE_VARS = ["{account_name}", "{email}", "{account_number}", "{sender}", "{transaction_id}", "{date}", "{year}", "{app_logo}", "{signature}", "{amount}", "{transaction_type}", "{description}"];
