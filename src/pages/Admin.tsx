@@ -1054,6 +1054,48 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Sent Email Viewer Dialog */}
+      <Dialog open={!!viewingSent} onOpenChange={(open) => !open && setViewingSent(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="truncate">{viewingSent?.subject || "(no subject)"}</DialogTitle></DialogHeader>
+          {viewingSent && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span><strong className="text-foreground">Sent:</strong> {format(new Date(viewingSent.created_at), "PPpp")}</span>
+                <span><strong className="text-foreground">Mode:</strong> {viewingSent.mode}</span>
+                <span className="text-success"><strong>{viewingSent.sent_count}</strong> delivered</span>
+                {viewingSent.failed_count > 0 && <span className="text-destructive"><strong>{viewingSent.failed_count}</strong> failed</span>}
+              </div>
+              <div>
+                <Label className="text-xs">Recipients ({viewingSent.recipients?.length ?? 0})</Label>
+                <div className="mt-1 p-2 bg-muted/40 rounded-md text-xs max-h-24 overflow-y-auto break-all">
+                  {(viewingSent.recipients ?? []).join(", ") || "—"}
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Message</Label>
+                <div className="mt-1 border rounded-md bg-background max-h-[50vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: viewingSent.html_body }} />
+              </div>
+              {Array.isArray(viewingSent.errors) && viewingSent.errors.length > 0 && (
+                <div>
+                  <Label className="text-xs text-destructive">Errors</Label>
+                  <pre className="mt-1 p-2 bg-destructive/10 text-destructive text-xs rounded-md max-h-32 overflow-y-auto whitespace-pre-wrap">{JSON.stringify(viewingSent.errors, null, 2)}</pre>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            {viewingSent && (
+              <Button size="sm" onClick={() => { const v = viewingSent; setViewingSent(null); openCompose({ to: (v.recipients ?? []).join(", "), subject: v.subject, body: "" }); }}>
+                <Send className="h-4 w-4 mr-1" /> Resend
+              </Button>
+            )}
+            <DialogClose asChild><Button variant="ghost" size="sm">Close</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       {/* View User Dialog */}
       <Dialog open={!!viewingUser} onOpenChange={(open) => !open && setViewingUser(null)}>
         <DialogContent className="max-w-md">
