@@ -99,6 +99,8 @@ const Admin = () => {
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
   const [sendingCompose, setSendingCompose] = useState(false);
+  const [sentEmails, setSentEmails] = useState<SentEmail[]>([]);
+  const [viewingSent, setViewingSent] = useState<SentEmail | null>(null);
 
   const openCompose = (preset?: { to?: string; subject?: string; body?: string }) => {
     setComposeMode(preset?.to ? "custom" : "custom");
