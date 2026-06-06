@@ -944,7 +944,47 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="mt-4">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-display flex items-center gap-2"><Clock className="h-4 w-4" /> Sent History</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Emails you've sent from this admin compose. Click to view the full message.</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchSentEmails}><RefreshCw className="h-4 w-4 mr-1" /> Refresh</Button>
+              </CardHeader>
+              <CardContent>
+                {sentEmails.length === 0 ? (
+                  <div className="text-center py-10 text-sm text-muted-foreground">No emails sent yet.</div>
+                ) : (
+                  <div className="divide-y divide-border border border-border rounded-lg overflow-hidden">
+                    {sentEmails.map((s) => (
+                      <button key={s.id} type="button" onClick={() => setViewingSent(s)} className="w-full text-left p-3 hover:bg-muted/40 flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium text-sm truncate">{s.subject || "(no subject)"}</p>
+                            <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{s.mode}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            To {s.recipients?.length ?? 0} recipient{(s.recipients?.length ?? 0) === 1 ? "" : "s"}
+                            {(s.recipients ?? []).slice(0, 2).length > 0 && `: ${(s.recipients ?? []).slice(0, 2).join(", ")}${(s.recipients?.length ?? 0) > 2 ? "…" : ""}`}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[11px] text-muted-foreground">{format(new Date(s.created_at), "PP p")}</p>
+                          <p className="text-xs mt-1">
+                            <span className="text-success font-medium">{s.sent_count} sent</span>
+                            {s.failed_count > 0 && <span className="text-destructive ml-2">{s.failed_count} failed</span>}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
+
 
           {/* Inbox Tab */}
           <TabsContent value="inbox">
