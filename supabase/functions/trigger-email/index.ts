@@ -80,7 +80,12 @@ Deno.serve(async (req) => {
     let errorMessage = "";
 
     try {
-      await sendConfiguredEmail(config, { to: recipient_email, subject, html });
+      const brandedHtml = renderBrandedEmail({
+        title: subject,
+        preheader: subject,
+        bodyHtml: toEmailContentHtml(html),
+      });
+      await sendConfiguredEmail(config, { to: recipient_email, subject, html: brandedHtml });
       success = true;
     } catch (e: unknown) {
       errorMessage = e instanceof Error ? e.message : "Send failed";
