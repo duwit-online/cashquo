@@ -95,6 +95,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_sent_emails: {
+        Row: {
+          created_at: string
+          errors: Json
+          failed_count: number
+          html_body: string
+          id: string
+          mode: string
+          recipients: string[]
+          sender_id: string | null
+          sent_count: number
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          errors?: Json
+          failed_count?: number
+          html_body?: string
+          id?: string
+          mode?: string
+          recipients?: string[]
+          sender_id?: string | null
+          sent_count?: number
+          subject?: string
+        }
+        Update: {
+          created_at?: string
+          errors?: Json
+          failed_count?: number
+          html_body?: string
+          id?: string
+          mode?: string
+          recipients?: string[]
+          sender_id?: string | null
+          sent_count?: number
+          subject?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string

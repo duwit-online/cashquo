@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { loadEmailSettings, sendConfiguredEmail } from "../_shared/email-provider.ts";
+import { renderBrandedEmail, toEmailContentHtml } from "../_shared/branded-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +34,6 @@ Deno.serve(async (req) => {
     const { mode, recipients, user_ids, subject, html } = body || {};
     if (!subject || !html) throw new Error("subject and html required");
 
-    // Resolve recipient list
     let targets: string[] = [];
     if (mode === "all") {
       const { data } = await admin.from("profiles").select("email");
@@ -54,11 +54,19 @@ Deno.serve(async (req) => {
       throw new Error("No email provider configured. Set SMTP or Resend in admin settings.");
     }
 
+    // Wrap the admin's content in the Fidelity CashQuora brand shell
+    const brandedHtml = renderBrandedEmail({
+      title: subject,
+      preheader: subject,
+      bodyHtml: toEmailContentHtml(html),
+      footerNote: "You received this email because you have an account with Fidelity CashQuora.",
+    });
+
     let sent = 0;
     const errors: { to: string; error: string }[] = [];
     for (const to of targets) {
       try {
-        await sendConfiguredEmail(settings, { to, subject, html });
+        await sendConfiguredEmail(settings, { to, subject, html: brandedHtml });
         sent++;
         await admin.from("email_logs").insert({
           recipient_email: to, trigger_type: "signup", status: "sent",
@@ -71,6 +79,20 @@ Deno.serve(async (req) => {
         });
       }
     }
+
+    // Persist to compose history
+    try {
+      await admin.from("admin_sent_emails").insert({
+        sender_id: caller.id,
+        mode: mode ?? "custom",
+        subject,
+        html_body: brandedHtml,
+        recipients: targets,
+        sent_count: sent,
+        failed_count: errors.length,
+        errors,
+      });
+    } catch (_) { /* non-fatal */ }
 
     return new Response(JSON.stringify({ ok: true, sent, failed: errors.length, errors }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

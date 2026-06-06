@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { loadEmailSettings, sendConfiguredEmail } from "../_shared/email-provider.ts";
+import { renderBrandedEmail, toEmailContentHtml } from "../_shared/branded-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,7 +80,12 @@ Deno.serve(async (req) => {
     let errorMessage = "";
 
     try {
-      await sendConfiguredEmail(config, { to: recipient_email, subject, html });
+      const brandedHtml = renderBrandedEmail({
+        title: subject,
+        preheader: subject,
+        bodyHtml: toEmailContentHtml(html),
+      });
+      await sendConfiguredEmail(config, { to: recipient_email, subject, html: brandedHtml });
       success = true;
     } catch (e: unknown) {
       errorMessage = e instanceof Error ? e.message : "Send failed";

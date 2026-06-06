@@ -31,6 +31,7 @@ interface UserRole { id: string; user_id: string; role: string; }
 interface EmailTemplate { id: string; name: string; trigger_type: string; subject: string; html_body: string; is_active: boolean; created_at: string; updated_at: string; }
 interface EmailTemplate { id: string; name: string; trigger_type: string; subject: string; html_body: string; is_active: boolean; created_at: string; updated_at: string; }
 interface EmailLog { id: string; recipient_email: string; trigger_type: string; template_id: string | null; status: string; error_message: string | null; created_at: string; }
+interface SentEmail { id: string; created_at: string; mode: string; subject: string; html_body: string; recipients: string[]; sent_count: number; failed_count: number; errors: any; }
 
 const TRIGGER_TYPES = ["signup", "login", "credit", "debit", "reversal", "account_statement", "new_login"];
 const TEMPLATE_VARS = ["{account_name}", "{email}", "{account_number}", "{sender}", "{transaction_id}", "{date}", "{year}", "{app_logo}", "{signature}", "{amount}", "{transaction_type}", "{description}"];
@@ -98,6 +99,8 @@ const Admin = () => {
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
   const [sendingCompose, setSendingCompose] = useState(false);
+  const [sentEmails, setSentEmails] = useState<SentEmail[]>([]);
+  const [viewingSent, setViewingSent] = useState<SentEmail | null>(null);
 
   const openCompose = (preset?: { to?: string; subject?: string; body?: string }) => {
     setComposeMode(preset?.to ? "custom" : "custom");
@@ -128,6 +131,7 @@ const Admin = () => {
       toast.success(`Sent ${sent} email${sent === 1 ? "" : "s"}${failed ? `, ${failed} failed` : ""}`);
       if (!failed) setComposeOpen(false);
       fetchLogs();
+      fetchSentEmails();
     } catch (e: any) {
       toast.error(e?.message || "Failed to send");
     } finally {
@@ -245,6 +249,11 @@ const Admin = () => {
     if (data) setEmailLogs(data as unknown as EmailLog[]);
   };
 
+  const fetchSentEmails = async () => {
+    const { data } = await (supabase as any).from("admin_sent_emails").select("*").order("created_at", { ascending: false }).limit(50);
+    if (data) setSentEmails(data as SentEmail[]);
+  };
+
   useEffect(() => {
     if (!isAdmin || authLoading) return;
     fetchAll();
@@ -254,6 +263,7 @@ const Admin = () => {
     fetchContactMessages();
     fetchPages();
     fetchInboxList();
+    fetchSentEmails();
   }, [isAdmin, authLoading]);
 
   if (authLoading) {
@@ -934,7 +944,47 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="mt-4">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-display flex items-center gap-2"><Clock className="h-4 w-4" /> Sent History</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Emails you've sent from this admin compose. Click to view the full message.</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchSentEmails}><RefreshCw className="h-4 w-4 mr-1" /> Refresh</Button>
+              </CardHeader>
+              <CardContent>
+                {sentEmails.length === 0 ? (
+                  <div className="text-center py-10 text-sm text-muted-foreground">No emails sent yet.</div>
+                ) : (
+                  <div className="divide-y divide-border border border-border rounded-lg overflow-hidden">
+                    {sentEmails.map((s) => (
+                      <button key={s.id} type="button" onClick={() => setViewingSent(s)} className="w-full text-left p-3 hover:bg-muted/40 flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium text-sm truncate">{s.subject || "(no subject)"}</p>
+                            <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{s.mode}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            To {s.recipients?.length ?? 0} recipient{(s.recipients?.length ?? 0) === 1 ? "" : "s"}
+                            {(s.recipients ?? []).slice(0, 2).length > 0 && `: ${(s.recipients ?? []).slice(0, 2).join(", ")}${(s.recipients?.length ?? 0) > 2 ? "…" : ""}`}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[11px] text-muted-foreground">{format(new Date(s.created_at), "PP p")}</p>
+                          <p className="text-xs mt-1">
+                            <span className="text-success font-medium">{s.sent_count} sent</span>
+                            {s.failed_count > 0 && <span className="text-destructive ml-2">{s.failed_count} failed</span>}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
+
 
           {/* Inbox Tab */}
           <TabsContent value="inbox">
@@ -1003,6 +1053,48 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sent Email Viewer Dialog */}
+      <Dialog open={!!viewingSent} onOpenChange={(open) => !open && setViewingSent(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="truncate">{viewingSent?.subject || "(no subject)"}</DialogTitle></DialogHeader>
+          {viewingSent && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span><strong className="text-foreground">Sent:</strong> {format(new Date(viewingSent.created_at), "PPpp")}</span>
+                <span><strong className="text-foreground">Mode:</strong> {viewingSent.mode}</span>
+                <span className="text-success"><strong>{viewingSent.sent_count}</strong> delivered</span>
+                {viewingSent.failed_count > 0 && <span className="text-destructive"><strong>{viewingSent.failed_count}</strong> failed</span>}
+              </div>
+              <div>
+                <Label className="text-xs">Recipients ({viewingSent.recipients?.length ?? 0})</Label>
+                <div className="mt-1 p-2 bg-muted/40 rounded-md text-xs max-h-24 overflow-y-auto break-all">
+                  {(viewingSent.recipients ?? []).join(", ") || "—"}
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Message</Label>
+                <div className="mt-1 border rounded-md bg-background max-h-[50vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: viewingSent.html_body }} />
+              </div>
+              {Array.isArray(viewingSent.errors) && viewingSent.errors.length > 0 && (
+                <div>
+                  <Label className="text-xs text-destructive">Errors</Label>
+                  <pre className="mt-1 p-2 bg-destructive/10 text-destructive text-xs rounded-md max-h-32 overflow-y-auto whitespace-pre-wrap">{JSON.stringify(viewingSent.errors, null, 2)}</pre>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            {viewingSent && (
+              <Button size="sm" onClick={() => { const v = viewingSent; setViewingSent(null); openCompose({ to: (v.recipients ?? []).join(", "), subject: v.subject, body: "" }); }}>
+                <Send className="h-4 w-4 mr-1" /> Resend
+              </Button>
+            )}
+            <DialogClose asChild><Button variant="ghost" size="sm">Close</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* View User Dialog */}
       <Dialog open={!!viewingUser} onOpenChange={(open) => !open && setViewingUser(null)}>
