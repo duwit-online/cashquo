@@ -131,6 +131,7 @@ const Admin = () => {
       toast.success(`Sent ${sent} email${sent === 1 ? "" : "s"}${failed ? `, ${failed} failed` : ""}`);
       if (!failed) setComposeOpen(false);
       fetchLogs();
+      fetchSentEmails();
     } catch (e: any) {
       toast.error(e?.message || "Failed to send");
     } finally {
