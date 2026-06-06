@@ -263,6 +263,7 @@ const Admin = () => {
     fetchContactMessages();
     fetchPages();
     fetchInboxList();
+    fetchSentEmails();
   }, [isAdmin, authLoading]);
 
   if (authLoading) {
