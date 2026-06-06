@@ -1,13 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { loadEmailSettings, sendConfiguredEmail } from "../_shared/email-provider.ts";
+import { renderBrandedEmail, escapeHtml } from "../_shared/branded-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -25,7 +23,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get admin emails
     const { data: adminRoles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
     const ids = (adminRoles ?? []).map((r: any) => r.user_id);
     if (!ids.length) {
@@ -48,28 +45,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    const html = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#fff">
-        <h2 style="margin:0 0 12px;color:#0a0a0a">New contact form submission</h2>
-        <p style="color:#555;margin:0 0 16px">A visitor has submitted the contact form on Fidelity CashQuora.</p>
-        <table style="width:100%;border-collapse:collapse;font-size:14px">
-          <tr><td style="padding:6px 0;color:#777;width:90px">Name</td><td style="padding:6px 0;font-weight:600">${escapeHtml(name)}</td></tr>
-          <tr><td style="padding:6px 0;color:#777">Email</td><td style="padding:6px 0">${escapeHtml(email)}</td></tr>
-          ${phone ? `<tr><td style="padding:6px 0;color:#777">Phone</td><td style="padding:6px 0">${escapeHtml(phone)}</td></tr>` : ""}
-          ${subject ? `<tr><td style="padding:6px 0;color:#777">Subject</td><td style="padding:6px 0">${escapeHtml(subject)}</td></tr>` : ""}
-        </table>
-        <div style="margin-top:16px;padding:12px 14px;background:#f5f5f5;border-radius:8px;white-space:pre-wrap;font-size:14px;color:#222">${escapeHtml(message)}</div>
-        <p style="margin-top:20px;font-size:12px;color:#888">Open the Admin → Messages tab to manage this submission.</p>
-      </div>`;
+    const bodyHtml = `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;background:#f8fafc;border-radius:10px;padding:6px 12px">
+        <tr><td style="padding:8px 6px;color:#64748b;width:100px">Name</td><td style="padding:8px 6px;font-weight:600;color:#0a2540">${escapeHtml(name)}</td></tr>
+        <tr><td style="padding:8px 6px;color:#64748b">Email</td><td style="padding:8px 6px"><a href="mailto:${escapeHtml(email)}" style="color:#0ea5e9;text-decoration:none">${escapeHtml(email)}</a></td></tr>
+        ${phone ? `<tr><td style="padding:8px 6px;color:#64748b">Phone</td><td style="padding:8px 6px">${escapeHtml(phone)}</td></tr>` : ""}
+        ${subject ? `<tr><td style="padding:8px 6px;color:#64748b">Subject</td><td style="padding:8px 6px">${escapeHtml(subject)}</td></tr>` : ""}
+      </table>
+      <div style="margin-top:18px;padding:16px 18px;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;white-space:pre-wrap;font-size:14px;color:#0f172a;line-height:1.6">${escapeHtml(message)}</div>`;
+
+    const html = renderBrandedEmail({
+      title: "New contact form submission",
+      preheader: `New message from ${name}`,
+      intro: "A visitor has submitted the contact form on Fidelity CashQuora.",
+      bodyHtml,
+      footerNote: "Open the Admin → Messages tab to manage this submission.",
+    });
 
     let sent = 0;
     const errors: string[] = [];
     for (const to of recipients) {
       try {
         await sendConfiguredEmail(settings, {
-          to,
-          subject: `[Contact] ${subject || "New message from " + name}`,
-          html,
+          to, subject: `[Contact] ${subject || "New message from " + name}`, html,
         });
         sent++;
       } catch (e) {
