@@ -249,6 +249,11 @@ const Admin = () => {
     if (data) setEmailLogs(data as unknown as EmailLog[]);
   };
 
+  const fetchSentEmails = async () => {
+    const { data } = await (supabase as any).from("admin_sent_emails").select("*").order("created_at", { ascending: false }).limit(50);
+    if (data) setSentEmails(data as SentEmail[]);
+  };
+
   useEffect(() => {
     if (!isAdmin || authLoading) return;
     fetchAll();
