@@ -121,15 +121,29 @@ export const sendConfiguredEmail = async (
     });
 
     try {
+      // Encode HTML as base64 to avoid quoted-printable artifacts like "=20"
+      // that appear when long lines or trailing spaces get soft-wrapped.
+      const htmlBytes = new TextEncoder().encode(options.html);
+      let binary = "";
+      for (let i = 0; i < htmlBytes.length; i++) binary += String.fromCharCode(htmlBytes[i]);
+      const base64Html = btoa(binary);
+
       await client.send({
         from: getFromAddress(config),
         to: options.to,
         subject: options.subject,
         content: "auto",
-        html: options.html,
+        mimeContent: [
+          {
+            mimeType: 'text/html; charset="utf-8"',
+            content: base64Html,
+            transferEncoding: "base64",
+          },
+        ],
       });
 
       return { success: true };
+
     } catch (error) {
       throw new Error(normalizeEmailError(error, config));
     } finally {
