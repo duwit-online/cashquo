@@ -69,11 +69,11 @@ export const renderBrandedEmail = (opts: BrandedEmailOptions): string => {
           <tr>
             <td style="background:#f8fafc;padding:22px 32px;border-top:1px solid #e2e8f0">
               <p style="margin:0 0 6px;color:#0a2540;font-size:13px;font-weight:600">${BRAND_NAME}</p>
-              <p style="margin:0 0 4px;color:#64748b;font-size:12px">${BRAND_ADDRESS}</p>
-              <p style="margin:0 0 12px;color:#64748b;font-size:12px">${BRAND_PHONE}</p>
+              <p style="margin:0 0 12px;color:#64748b;font-size:12px">${BRAND_ADDRESS}</p>
               <p style="margin:0;color:#94a3b8;font-size:11px">© ${year} ${BRAND_NAME}. All rights reserved. This is an automated message — please do not reply.</p>
             </td>
           </tr>
+
         </table>
       </td></tr>
     </table>

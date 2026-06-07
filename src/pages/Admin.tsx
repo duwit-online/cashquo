@@ -38,6 +38,9 @@ const TEMPLATE_VARS = ["{account_name}", "{email}", "{account_number}", "{sender
 
 const Admin = () => {
   const { isAdmin, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try { return localStorage.getItem("admin_active_tab") || "users"; } catch { return "users"; }
+  });
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
@@ -583,7 +586,7 @@ const Admin = () => {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="users" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); try { localStorage.setItem("admin_active_tab", v); } catch {} }} className="space-y-4">
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="users" className="gap-1"><Users className="h-3.5 w-3.5" /> Users</TabsTrigger>
             <TabsTrigger value="transactions" className="gap-1"><Activity className="h-3.5 w-3.5" /> Transactions</TabsTrigger>
@@ -1026,30 +1029,30 @@ const Admin = () => {
 
       {/* View Inbox Message */}
       <Dialog open={!!viewingInbox} onOpenChange={(open) => !open && setViewingInbox(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="truncate">{viewingInbox?.subject || "(no subject)"}</DialogTitle></DialogHeader>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader><DialogTitle className="truncate pr-8 text-base sm:text-lg">{viewingInbox?.subject || "(no subject)"}</DialogTitle></DialogHeader>
           {viewingInbox && (
             <div className="space-y-3 text-sm">
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border-b border-border pb-2">
-                <span><strong className="text-foreground">From:</strong> {viewingInbox.from_name ? `${viewingInbox.from_name} <${viewingInbox.from_address}>` : viewingInbox.from_address}</span>
-                <span><strong className="text-foreground">To:</strong> {viewingInbox.to_address}</span>
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground border-b border-border pb-2 break-words">
+                <span className="break-all"><strong className="text-foreground">From:</strong> {viewingInbox.from_name ? `${viewingInbox.from_name} <${viewingInbox.from_address}>` : viewingInbox.from_address}</span>
+                <span className="break-all"><strong className="text-foreground">To:</strong> {viewingInbox.to_address}</span>
                 <span><strong className="text-foreground">Date:</strong> {format(new Date(viewingInbox.received_at), "MMM d, yyyy HH:mm")}</span>
               </div>
               {viewingInbox.body_html ? (
-                <div className="border rounded-md p-3 bg-background max-h-[50vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: viewingInbox.body_html }} />
+                <div className="border rounded-md p-3 bg-background max-h-[50vh] overflow-auto text-sm [&_*]:max-w-full [&_img]:h-auto [&_table]:!w-full" dangerouslySetInnerHTML={{ __html: viewingInbox.body_html }} />
               ) : (
-                <pre className="whitespace-pre-wrap text-sm bg-muted/30 p-3 rounded-md max-h-[50vh] overflow-y-auto">{viewingInbox.body_text || "(empty body)"}</pre>
+                <pre className="whitespace-pre-wrap break-words text-sm bg-muted/30 p-3 rounded-md max-h-[50vh] overflow-y-auto">{viewingInbox.body_text || "(empty body)"}</pre>
               )}
             </div>
           )}
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             {viewingInbox && (
               <>
-                <Button variant="outline" size="sm" onClick={() => deleteInboxMsg(viewingInbox.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
-                <Button size="sm" onClick={() => { openCompose({ to: viewingInbox.from_address, subject: `Re: ${viewingInbox.subject}`, body: `\n\n---\nOn ${format(new Date(viewingInbox.received_at), "PPpp")}, ${viewingInbox.from_address} wrote:\n${viewingInbox.body_text}` }); setViewingInbox(null); }}><Reply className="h-4 w-4 mr-1" /> Reply</Button>
+                <Button variant="outline" size="sm" onClick={() => deleteInboxMsg(viewingInbox.id)} className="text-destructive w-full sm:w-auto"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
+                <Button size="sm" className="w-full sm:w-auto" onClick={() => { openCompose({ to: viewingInbox.from_address, subject: `Re: ${viewingInbox.subject}`, body: `\n\n---\nOn ${format(new Date(viewingInbox.received_at), "PPpp")}, ${viewingInbox.from_address} wrote:\n${viewingInbox.body_text}` }); setViewingInbox(null); }}><Reply className="h-4 w-4 mr-1" /> Reply</Button>
               </>
             )}
-            <DialogClose asChild><Button variant="ghost" size="sm">Close</Button></DialogClose>
+            <DialogClose asChild><Button variant="ghost" size="sm" className="w-full sm:w-auto">Close</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1413,7 +1416,7 @@ const Admin = () => {
 
       {/* Compose Email Dialog */}
       <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader><DialogTitle>Compose Email</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
@@ -1439,8 +1442,8 @@ const Admin = () => {
                   {profiles.map(p => (
                     <label key={p.user_id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/40 cursor-pointer text-sm">
                       <input type="checkbox" checked={composeUserIds.includes(p.user_id)} onChange={(e) => setComposeUserIds(prev => e.target.checked ? [...prev, p.user_id] : prev.filter(id => id !== p.user_id))} />
-                      <span className="flex-1">{p.full_name || `${p.first_name} ${p.last_name}`.trim() || p.email}</span>
-                      <span className="text-xs text-muted-foreground">{p.email}</span>
+                      <span className="flex-1 truncate">{p.full_name || `${p.first_name} ${p.last_name}`.trim() || p.email}</span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[40%]">{p.email}</span>
                     </label>
                   ))}
                   {profiles.length === 0 && <p className="text-xs text-muted-foreground p-2">No users found</p>}
@@ -1456,12 +1459,12 @@ const Admin = () => {
             </div>
             <div>
               <Label className="text-xs">Message (plain text or HTML)</Label>
-              <Textarea rows={10} value={composeBody} onChange={(e) => setComposeBody(e.target.value)} placeholder="Write your message..." />
+              <Textarea rows={8} value={composeBody} onChange={(e) => setComposeBody(e.target.value)} placeholder="Write your message..." />
               <p className="text-[11px] text-muted-foreground mt-1">If your message starts with &lt; it will be sent as HTML, otherwise it will be wrapped in a styled container.</p>
             </div>
-            <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={sendCompose} disabled={sendingCompose}>{sendingCompose ? "Sending..." : "Send Email"}</Button>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <DialogClose asChild><Button variant="outline" className="w-full sm:w-auto">Cancel</Button></DialogClose>
+              <Button onClick={sendCompose} disabled={sendingCompose} className="w-full sm:w-auto">{sendingCompose ? "Sending..." : "Send Email"}</Button>
             </DialogFooter>
           </div>
         </DialogContent>
