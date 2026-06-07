@@ -57,6 +57,14 @@ const normalizeEmailError = (error: unknown, config: EmailSettings) => {
   return message;
 };
 
+const foldBase64 = (value: string) => {
+  const lines: string[] = [];
+  for (let index = 0; index < value.length; index += 76) {
+    lines.push(value.slice(index, index + 76));
+  }
+  return lines.join("\r\n");
+};
+
 export const sendConfiguredEmail = async (
   config: EmailSettings,
   options: { html: string; subject: string; to: string },
@@ -126,7 +134,7 @@ export const sendConfiguredEmail = async (
       const htmlBytes = new TextEncoder().encode(options.html);
       let binary = "";
       for (let i = 0; i < htmlBytes.length; i++) binary += String.fromCharCode(htmlBytes[i]);
-      const base64Html = btoa(binary);
+      const base64Html = foldBase64(btoa(binary));
 
       await client.send({
         from: getFromAddress(config),
