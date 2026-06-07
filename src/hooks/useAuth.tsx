@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +23,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const initializedRef = useRef(false);
+  const userIdRef = useRef<string | null>(null);
 
   const checkAdmin = async (userId: string) => {
     try {
@@ -49,18 +51,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const syncAuthState = (nextSession: Session | null) => {
       if (!mounted) return;
+      const nextUserId = nextSession?.user?.id ?? null;
+      const isInitialSync = !initializedRef.current;
+      const sameUser = userIdRef.current === nextUserId;
+
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
+      userIdRef.current = nextUserId;
 
       if (!nextSession?.user) {
         setIsAdmin(false);
+        initializedRef.current = true;
         setLoading(false);
         return;
       }
 
-      setLoading(true);
+      if (isInitialSync) setLoading(true);
+
+      if (!isInitialSync && sameUser) {
+        setLoading(false);
+        return;
+      }
+
       checkAdmin(nextSession.user.id).finally(() => {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          initializedRef.current = true;
+          setLoading(false);
+        }
       });
     };
 
