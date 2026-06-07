@@ -175,7 +175,15 @@ const Admin = () => {
 
   const fetchInboxList = async () => {
     const { data } = await supabase.from("admin_inbox").select("*").order("received_at", { ascending: false }).limit(200);
-    if (data) setInbox(data as any);
+    if (data) {
+      const nextInbox = data as any;
+      setInbox(nextInbox);
+      if (resumeViewingInboxId) {
+        const resumed = nextInbox.find((m: InboxMsg) => m.id === resumeViewingInboxId);
+        if (resumed) setViewingInbox(resumed);
+        setResumeViewingInboxId(null);
+      }
+    }
   };
 
   const refreshInbox = async () => {
@@ -273,8 +281,49 @@ const Admin = () => {
 
   const fetchSentEmails = async () => {
     const { data } = await (supabase as any).from("admin_sent_emails").select("*").order("created_at", { ascending: false }).limit(50);
-    if (data) setSentEmails(data as SentEmail[]);
+    if (data) {
+      const nextSent = data as SentEmail[];
+      setSentEmails(nextSent);
+      if (resumeViewingSentId) {
+        const resumed = nextSent.find((s) => s.id === resumeViewingSentId);
+        if (resumed) setViewingSent(resumed);
+        setResumeViewingSentId(null);
+      }
+    }
   };
+
+  useEffect(() => {
+    writeAdminPersistedState({
+      activeTab,
+      createOpen,
+      createForm,
+      editingUser,
+      editForm,
+      viewingUser,
+      balanceUser,
+      balanceForm,
+      transactionUser,
+      transactionForm,
+      settingsOpen,
+      testEmail,
+      editingTemplate,
+      templateForm,
+      showPreview,
+      viewingMessage,
+      composeOpen,
+      composeMode,
+      composeUserIds,
+      composeRecipients,
+      composeSubject,
+      composeBody,
+      viewingSent,
+      viewingSentId: viewingSent?.id ?? null,
+      editingPage,
+      pageForm,
+      viewingInbox,
+      viewingInboxId: viewingInbox?.id ?? null,
+    });
+  }, [activeTab, createOpen, createForm, editingUser, editForm, viewingUser, balanceUser, balanceForm, transactionUser, transactionForm, settingsOpen, testEmail, editingTemplate, templateForm, showPreview, viewingMessage, composeOpen, composeMode, composeUserIds, composeRecipients, composeSubject, composeBody, viewingSent, editingPage, pageForm, viewingInbox]);
 
   useEffect(() => {
     if (!isAdmin || authLoading) return;
