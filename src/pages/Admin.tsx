@@ -101,10 +101,10 @@ const Admin = () => {
 
   // Email templates
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
-  const [templateForm, setTemplateForm] = useState({ name: "", trigger_type: "signup", subject: "", html_body: "", is_active: true });
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(() => persistedAdminState.editingTemplate ?? null);
+  const [templateForm, setTemplateForm] = useState(() => persistedAdminState.templateForm ?? { name: "", trigger_type: "signup", subject: "", html_body: "", is_active: true });
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(() => Boolean(persistedAdminState.showPreview));
 
   // Email logs
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
@@ -122,7 +122,7 @@ const Admin = () => {
   const [composeBody, setComposeBody] = useState(() => persistedAdminState.composeBody ?? "");
   const [sendingCompose, setSendingCompose] = useState(false);
   const [sentEmails, setSentEmails] = useState<SentEmail[]>([]);
-  const [viewingSent, setViewingSent] = useState<SentEmail | null>(null);
+  const [viewingSent, setViewingSent] = useState<SentEmail | null>(() => persistedAdminState.viewingSent ?? null);
 
   const openCompose = (preset?: { to?: string; subject?: string; body?: string }) => {
     setComposeMode(preset?.to ? "custom" : "custom");
@@ -171,7 +171,7 @@ const Admin = () => {
   interface InboxMsg { id: string; from_address: string; from_name: string; to_address: string; subject: string; body_text: string; body_html: string; received_at: string; is_read: boolean; }
   const [inbox, setInbox] = useState<InboxMsg[]>([]);
   const [fetchingInbox, setFetchingInbox] = useState(false);
-  const [viewingInbox, setViewingInbox] = useState<InboxMsg | null>(null);
+  const [viewingInbox, setViewingInbox] = useState<InboxMsg | null>(() => persistedAdminState.viewingInbox ?? null);
 
   const fetchInboxList = async () => {
     const { data } = await supabase.from("admin_inbox").select("*").order("received_at", { ascending: false }).limit(200);
