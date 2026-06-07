@@ -38,6 +38,9 @@ const TEMPLATE_VARS = ["{account_name}", "{email}", "{account_number}", "{sender
 
 const Admin = () => {
   const { isAdmin, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try { return localStorage.getItem("admin_active_tab") || "users"; } catch { return "users"; }
+  });
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
@@ -583,7 +586,7 @@ const Admin = () => {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="users" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); try { localStorage.setItem("admin_active_tab", v); } catch {} }} className="space-y-4">
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="users" className="gap-1"><Users className="h-3.5 w-3.5" /> Users</TabsTrigger>
             <TabsTrigger value="transactions" className="gap-1"><Activity className="h-3.5 w-3.5" /> Transactions</TabsTrigger>
