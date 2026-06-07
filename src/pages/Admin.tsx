@@ -35,11 +35,30 @@ interface SentEmail { id: string; created_at: string; mode: string; subject: str
 
 const TRIGGER_TYPES = ["signup", "login", "credit", "debit", "reversal", "account_statement", "new_login"];
 const TEMPLATE_VARS = ["{account_name}", "{email}", "{account_number}", "{sender}", "{transaction_id}", "{date}", "{year}", "{app_logo}", "{signature}", "{amount}", "{transaction_type}", "{description}"];
+const ADMIN_STATE_KEY = "cashquora_admin_work_state";
+
+const readAdminPersistedState = (): Record<string, any> => {
+  try {
+    return JSON.parse(localStorage.getItem(ADMIN_STATE_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+};
+
+const writeAdminPersistedState = (state: Record<string, any>) => {
+  try {
+    localStorage.setItem(ADMIN_STATE_KEY, JSON.stringify(state));
+    localStorage.setItem("admin_active_tab", state.activeTab || "users");
+  } catch {}
+};
 
 const Admin = () => {
   const { isAdmin, loading: authLoading } = useAuth();
+  const [persistedAdminState] = useState<Record<string, any>>(() => readAdminPersistedState());
+  const [resumeViewingInboxId, setResumeViewingInboxId] = useState<string | null>(() => persistedAdminState.viewingInboxId ?? null);
+  const [resumeViewingSentId, setResumeViewingSentId] = useState<string | null>(() => persistedAdminState.viewingSentId ?? null);
   const [activeTab, setActiveTab] = useState<string>(() => {
-    try { return localStorage.getItem("admin_active_tab") || "users"; } catch { return "users"; }
+    try { return persistedAdminState.activeTab || localStorage.getItem("admin_active_tab") || "users"; } catch { return "users"; }
   });
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
@@ -47,17 +66,17 @@ const Admin = () => {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  const [editingUser, setEditingUser] = useState<ProfileRow | null>(null);
-  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", email: "", state: "", town: "", postal_code: "", plain_password: "" });
-  const [viewingUser, setViewingUser] = useState<ProfileRow | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ first_name: "", last_name: "", email: "", password: "", state: "", town: "", postal_code: "" });
+  const [editingUser, setEditingUser] = useState<ProfileRow | null>(() => persistedAdminState.editingUser ?? null);
+  const [editForm, setEditForm] = useState(() => persistedAdminState.editForm ?? { first_name: "", last_name: "", email: "", state: "", town: "", postal_code: "", plain_password: "" });
+  const [viewingUser, setViewingUser] = useState<ProfileRow | null>(() => persistedAdminState.viewingUser ?? null);
+  const [createOpen, setCreateOpen] = useState(() => Boolean(persistedAdminState.createOpen));
+  const [createForm, setCreateForm] = useState(() => persistedAdminState.createForm ?? { first_name: "", last_name: "", email: "", password: "", state: "", town: "", postal_code: "" });
   const [creating, setCreating] = useState(false);
-  const [balanceUser, setBalanceUser] = useState<ProfileRow | null>(null);
-  const [balanceForm, setBalanceForm] = useState({ balance: "0" });
+  const [balanceUser, setBalanceUser] = useState<ProfileRow | null>(() => persistedAdminState.balanceUser ?? null);
+  const [balanceForm, setBalanceForm] = useState(() => persistedAdminState.balanceForm ?? { balance: "0" });
   const [savingBalance, setSavingBalance] = useState(false);
-  const [transactionUser, setTransactionUser] = useState<ProfileRow | null>(null);
-  const [transactionForm, setTransactionForm] = useState({ type: "credit", amount: "", description: "", status: "completed", recipient: "" });
+  const [transactionUser, setTransactionUser] = useState<ProfileRow | null>(() => persistedAdminState.transactionUser ?? null);
+  const [transactionForm, setTransactionForm] = useState(() => persistedAdminState.transactionForm ?? { type: "credit", amount: "", description: "", status: "completed", recipient: "" });
   const [creatingTransaction, setCreatingTransaction] = useState(false);
 
   // Delete confirmation (double confirm)
@@ -66,7 +85,7 @@ const Admin = () => {
   const [deleting, setDeleting] = useState(false);
 
   // Settings
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(() => Boolean(persistedAdminState.settingsOpen));
   const [emailSettings, setEmailSettings] = useState({
     email_provider: "none", smtp_host: "", smtp_port: "587", smtp_user: "", smtp_password: "",
     smtp_from_email: "", smtp_from_name: "Fidelity CashQuora", resend_api_key: "", notification_sound_url: "",
@@ -78,7 +97,7 @@ const Admin = () => {
   const [soundFile, setSoundFile] = useState<File | null>(null);
   const [uploadingSound, setUploadingSound] = useState(false);
   const [testingSmtp, setTestingSmtp] = useState(false);
-  const [testEmail, setTestEmail] = useState("");
+  const [testEmail, setTestEmail] = useState(() => persistedAdminState.testEmail ?? "");
 
   // Email templates
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -92,15 +111,15 @@ const Admin = () => {
 
   // Contact messages
   const [contactMessages, setContactMessages] = useState<Array<{ id: string; name: string; email: string; phone: string; subject: string; message: string; status: string; created_at: string }>>([]);
-  const [viewingMessage, setViewingMessage] = useState<typeof contactMessages[number] | null>(null);
+  const [viewingMessage, setViewingMessage] = useState<typeof contactMessages[number] | null>(() => persistedAdminState.viewingMessage ?? null);
 
   // Compose email (admin -> users)
-  const [composeOpen, setComposeOpen] = useState(false);
-  const [composeMode, setComposeMode] = useState<"all" | "users" | "custom">("custom");
-  const [composeUserIds, setComposeUserIds] = useState<string[]>([]);
-  const [composeRecipients, setComposeRecipients] = useState("");
-  const [composeSubject, setComposeSubject] = useState("");
-  const [composeBody, setComposeBody] = useState("");
+  const [composeOpen, setComposeOpen] = useState(() => Boolean(persistedAdminState.composeOpen));
+  const [composeMode, setComposeMode] = useState<"all" | "users" | "custom">(() => persistedAdminState.composeMode ?? "custom");
+  const [composeUserIds, setComposeUserIds] = useState<string[]>(() => persistedAdminState.composeUserIds ?? []);
+  const [composeRecipients, setComposeRecipients] = useState(() => persistedAdminState.composeRecipients ?? "");
+  const [composeSubject, setComposeSubject] = useState(() => persistedAdminState.composeSubject ?? "");
+  const [composeBody, setComposeBody] = useState(() => persistedAdminState.composeBody ?? "");
   const [sendingCompose, setSendingCompose] = useState(false);
   const [sentEmails, setSentEmails] = useState<SentEmail[]>([]);
   const [viewingSent, setViewingSent] = useState<SentEmail | null>(null);
@@ -144,8 +163,8 @@ const Admin = () => {
 
   // Static pages
   const [pages, setPages] = useState<Array<{ id: string; slug: string; title: string; content: string; updated_at: string }>>([]);
-  const [editingPage, setEditingPage] = useState<typeof pages[number] | null>(null);
-  const [pageForm, setPageForm] = useState({ title: "", content: "" });
+  const [editingPage, setEditingPage] = useState<typeof pages[number] | null>(() => persistedAdminState.editingPage ?? null);
+  const [pageForm, setPageForm] = useState(() => persistedAdminState.pageForm ?? { title: "", content: "" });
   const [savingPage, setSavingPage] = useState(false);
 
   // Admin inbox (IMAP)
