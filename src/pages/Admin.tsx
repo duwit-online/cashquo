@@ -279,6 +279,13 @@ const Admin = () => {
     if (data) setEmailLogs(data as unknown as EmailLog[]);
   };
 
+  const clearEmailLogs = async () => {
+    const { error } = await supabase.from("email_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    if (error) { toast.error(error.message); return; }
+    toast.success("Email logs cleared");
+    setEmailLogs([]);
+  };
+
   const fetchSentEmails = async () => {
     const { data } = await (supabase as any).from("admin_sent_emails").select("*").order("created_at", { ascending: false }).limit(50);
     if (data) {
