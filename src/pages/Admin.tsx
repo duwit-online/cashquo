@@ -186,18 +186,22 @@ const Admin = () => {
     }
   };
 
-  const refreshInbox = async () => {
-    setFetchingInbox(true);
+  const refreshInbox = async (silent = false) => {
+    if (!silent) setFetchingInbox(true);
     try {
       const { data, error } = await supabase.functions.invoke("fetch-inbox", { body: {} });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message || "Fetch failed");
       const inserted = (data as any)?.inserted ?? 0;
-      toast.success(inserted ? `${inserted} new message${inserted === 1 ? "" : "s"}` : "Inbox up to date");
+      if (!silent) {
+        toast.success(inserted ? `${inserted} new message${inserted === 1 ? "" : "s"}` : "Inbox up to date");
+      } else if (inserted > 0) {
+        toast.success(`${inserted} new message${inserted === 1 ? "" : "s"}`);
+      }
       await fetchInboxList();
     } catch (e: any) {
-      toast.error(e?.message || "Failed to fetch inbox");
+      if (!silent) toast.error(e?.message || "Failed to fetch inbox");
     }
-    setFetchingInbox(false);
+    if (!silent) setFetchingInbox(false);
   };
 
   const markInboxRead = async (id: string) => {
@@ -279,6 +283,13 @@ const Admin = () => {
     if (data) setEmailLogs(data as unknown as EmailLog[]);
   };
 
+  const clearEmailLogs = async () => {
+    const { error } = await supabase.from("email_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    if (error) { toast.error(error.message); return; }
+    toast.success("Email logs cleared");
+    setEmailLogs([]);
+  };
+
   const fetchSentEmails = async () => {
     const { data } = await (supabase as any).from("admin_sent_emails").select("*").order("created_at", { ascending: false }).limit(50);
     if (data) {
@@ -336,6 +347,16 @@ const Admin = () => {
     fetchInboxList();
     fetchSentEmails();
   }, [isAdmin, authLoading]);
+
+  // Auto-refresh inbox every 10 seconds while the Inbox tab is active
+  useEffect(() => {
+    if (!isAdmin || authLoading || activeTab !== "inbox") return;
+    const id = setInterval(() => {
+      refreshInbox(true);
+    }, 10000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, authLoading, activeTab]);
 
   if (authLoading) {
     return <DashboardLayout><div className="flex items-center justify-center min-h-[60vh]"><div className="animate-pulse text-muted-foreground">Loading...</div></div></DashboardLayout>;
@@ -894,7 +915,26 @@ const Admin = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-display">Email Logs</CardTitle>
-                <Button variant="outline" size="sm" onClick={fetchLogs}>Refresh</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={fetchLogs}>Refresh</Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" disabled={emailLogs.length === 0}>Clear All</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>⚠️ Clear all email logs?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete every email log entry. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={clearEmailLogs}>Delete all</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -1065,7 +1105,7 @@ const Admin = () => {
                   <CardTitle className="text-lg font-display">Inbox</CardTitle>
                   <p className="text-xs text-muted-foreground mt-1">Incoming emails fetched from your IMAP mailbox. Configure IMAP under Settings.</p>
                 </div>
-                <Button size="sm" variant="outline" onClick={refreshInbox} disabled={fetchingInbox} className="gap-1">
+                <Button size="sm" variant="outline" onClick={() => refreshInbox()} disabled={fetchingInbox} className="gap-1">
                   <RefreshCw className={`h-4 w-4 ${fetchingInbox ? "animate-spin" : ""}`} /> {fetchingInbox ? "Fetching..." : "Refresh"}
                 </Button>
               </CardHeader>
