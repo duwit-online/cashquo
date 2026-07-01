@@ -186,18 +186,22 @@ const Admin = () => {
     }
   };
 
-  const refreshInbox = async () => {
-    setFetchingInbox(true);
+  const refreshInbox = async (silent = false) => {
+    if (!silent) setFetchingInbox(true);
     try {
       const { data, error } = await supabase.functions.invoke("fetch-inbox", { body: {} });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message || "Fetch failed");
       const inserted = (data as any)?.inserted ?? 0;
-      toast.success(inserted ? `${inserted} new message${inserted === 1 ? "" : "s"}` : "Inbox up to date");
+      if (!silent) {
+        toast.success(inserted ? `${inserted} new message${inserted === 1 ? "" : "s"}` : "Inbox up to date");
+      } else if (inserted > 0) {
+        toast.success(`${inserted} new message${inserted === 1 ? "" : "s"}`);
+      }
       await fetchInboxList();
     } catch (e: any) {
-      toast.error(e?.message || "Failed to fetch inbox");
+      if (!silent) toast.error(e?.message || "Failed to fetch inbox");
     }
-    setFetchingInbox(false);
+    if (!silent) setFetchingInbox(false);
   };
 
   const markInboxRead = async (id: string) => {
