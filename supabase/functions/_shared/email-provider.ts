@@ -156,8 +156,6 @@ export const sendConfiguredEmail = async (
       try {
         transporter.close();
       } catch {}
-        await client.close();
-      } catch {}
     }
   }
 
