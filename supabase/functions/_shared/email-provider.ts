@@ -136,12 +136,33 @@ export const sendConfiguredEmail = async (
       for (let i = 0; i < htmlBytes.length; i++) binary += String.fromCharCode(htmlBytes[i]);
       const base64Html = foldBase64(btoa(binary));
 
+      // Derive a readable plain-text fallback from the HTML so clients that
+      // prefer text/plain (or previews) show the actual message instead of
+      // literal placeholder text like "auto".
+      const plainText = options.html
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<\/(p|div|h[1-6]|li|tr|br)>/gi, "\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, '"')
+        .replace(/\n{3,}/g, "\n\n")
+        .trim() || options.subject;
+
       await client.send({
         from: getFromAddress(config),
         to: options.to,
         subject: options.subject,
-        content: "auto",
+        content: plainText,
         mimeContent: [
+          {
+            mimeType: 'text/plain; charset="utf-8"',
+            content: plainText,
+          },
           {
             mimeType: 'text/html; charset="utf-8"',
             content: base64Html,
@@ -149,6 +170,7 @@ export const sendConfiguredEmail = async (
           },
         ],
       });
+
 
       return { success: true };
 
