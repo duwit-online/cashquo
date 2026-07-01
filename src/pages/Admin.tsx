@@ -344,6 +344,16 @@ const Admin = () => {
     fetchSentEmails();
   }, [isAdmin, authLoading]);
 
+  // Auto-refresh inbox every 10 seconds while the Inbox tab is active
+  useEffect(() => {
+    if (!isAdmin || authLoading || activeTab !== "inbox") return;
+    const id = setInterval(() => {
+      refreshInbox();
+    }, 10000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, authLoading, activeTab]);
+
   if (authLoading) {
     return <DashboardLayout><div className="flex items-center justify-center min-h-[60vh]"><div className="animate-pulse text-muted-foreground">Loading...</div></div></DashboardLayout>;
   }
