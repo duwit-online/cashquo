@@ -1105,7 +1105,7 @@ const Admin = () => {
                   <CardTitle className="text-lg font-display">Inbox</CardTitle>
                   <p className="text-xs text-muted-foreground mt-1">Incoming emails fetched from your IMAP mailbox. Configure IMAP under Settings.</p>
                 </div>
-                <Button size="sm" variant="outline" onClick={refreshInbox} disabled={fetchingInbox} className="gap-1">
+                <Button size="sm" variant="outline" onClick={() => refreshInbox()} disabled={fetchingInbox} className="gap-1">
                   <RefreshCw className={`h-4 w-4 ${fetchingInbox ? "animate-spin" : ""}`} /> {fetchingInbox ? "Fetching..." : "Refresh"}
                 </Button>
               </CardHeader>
