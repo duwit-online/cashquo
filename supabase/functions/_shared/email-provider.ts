@@ -115,30 +115,18 @@ export const sendConfiguredEmail = async (
     if (!username) throw new Error("SMTP username is not configured");
     if (!password) throw new Error("SMTP password is not configured");
 
-    const { SMTPClient } = await import("npm:denomailer@1.6.0");
-    const client = new SMTPClient({
-      connection: {
-        hostname: host,
-        port,
-        tls: port === 465,
-        auth: {
-          username,
-          password,
-        },
-      },
+    const nodemailer = (await import("npm:nodemailer@6.9.14")).default;
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user: username, pass: password },
+      connectionTimeout: 20000,
+      greetingTimeout: 20000,
+      socketTimeout: 30000,
     });
 
     try {
-      // Encode HTML as base64 to avoid quoted-printable artifacts like "=20"
-      // that appear when long lines or trailing spaces get soft-wrapped.
-      const htmlBytes = new TextEncoder().encode(options.html);
-      let binary = "";
-      for (let i = 0; i < htmlBytes.length; i++) binary += String.fromCharCode(htmlBytes[i]);
-      const base64Html = foldBase64(btoa(binary));
-
-      // Derive a readable plain-text fallback from the HTML so clients that
-      // prefer text/plain (or previews) show the actual message instead of
-      // literal placeholder text like "auto".
       const plainText = options.html
         .replace(/<style[\s\S]*?<\/style>/gi, "")
         .replace(/<script[\s\S]*?<\/script>/gi, "")
@@ -153,32 +141,20 @@ export const sendConfiguredEmail = async (
         .replace(/\n{3,}/g, "\n\n")
         .trim() || options.subject;
 
-      await client.send({
+      await transporter.sendMail({
         from: getFromAddress(config),
         to: options.to,
         subject: options.subject,
-        content: plainText,
-        mimeContent: [
-          {
-            mimeType: 'text/plain; charset="utf-8"',
-            content: plainText,
-          },
-          {
-            mimeType: 'text/html; charset="utf-8"',
-            content: base64Html,
-            transferEncoding: "base64",
-          },
-        ],
+        text: plainText,
+        html: options.html,
       });
 
-
       return { success: true };
-
     } catch (error) {
       throw new Error(normalizeEmailError(error, config));
     } finally {
       try {
-        await client.close();
+        transporter.close();
       } catch {}
     }
   }
