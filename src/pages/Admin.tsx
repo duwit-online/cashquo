@@ -901,7 +901,26 @@ const Admin = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-display">Email Logs</CardTitle>
-                <Button variant="outline" size="sm" onClick={fetchLogs}>Refresh</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={fetchLogs}>Refresh</Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" disabled={emailLogs.length === 0}>Clear All</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>⚠️ Clear all email logs?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete every email log entry. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={clearEmailLogs}>Delete all</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
