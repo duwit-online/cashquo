@@ -115,7 +115,7 @@ export const sendConfiguredEmail = async (
     if (!username) throw new Error("SMTP username is not configured");
     if (!password) throw new Error("SMTP password is not configured");
 
-    const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
+    const { SMTPClient } = await import("npm:denomailer@1.6.0");
     const client = new SMTPClient({
       connection: {
         hostname: host,
